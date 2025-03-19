@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Sistema de Gestión Documental para Profesores</title>
+    <link rel="stylesheet" href="styles/stylesPreg.css">
+</head>
+<body>
+    <div class="container">
+        <div class="image-container">
+            <img src="https://img.freepik.com/foto-gratis/sonriente-mostrando-pulgares-abajo-joven-maestra-gafas-sosteniendo-papel-sentado-escritorio-herramientas-escolares-aula_141793-133800.jpg?t=st=1741330388~exp=1741333988~hmac=827fab9d82e9536dbdfb9f16e3f0c43b63ba27c728c0457eb90715b1736ef8a1&w=1800" alt="Profesor">
+        </div>
+        <div class="form-container">
+            <div class="form-content">
+                <h1>Registro</h1>
+                <p>Cree una cuenta para iniciar sesion</p>
+                
+                <form action="PregistroF.php" method="POST">
+                    <div class="form-group">
+                        <label for="nombre">Nombre:</label>
+                        <input type="text" id="nombre" name="nombre" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="apellidos">Apellidos:</label>
+                        <input type="text" id="apellidos" name="apellidos" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Contraseña:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn-registrarse">REGISTRARSE</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
