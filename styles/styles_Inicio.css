@@ -1,0 +1,414 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background-color: #1a1a1a;
+  color: white;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.main {
+  /*Archivos y carpetas*/
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  grid-template-rows: 4fr 1fr;
+  gap: 10px;
+  margin: 60px 15px 0px 15px;
+}
+.header {
+  background-color: #1a1a1a;
+  position: fixed;
+  top: 0;
+  padding: 10px;
+  border-bottom: #c4a14b solid;
+  margin-bottom: 20px;
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+}
+/* Menu lateral*/
+/* From Uiverse.io by JaydipPrajapati1910 */
+.burger {
+  position: relative;
+  width: 34px;
+  height: 25px;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+}
+
+.burger input {
+  display: none;
+}
+
+.burger span {
+  display: block;
+  position: absolute;
+  height: 3px;
+  width: 100%;
+  background: #c4a14b;
+  border-radius: 9px;
+  opacity: 1;
+  left: 0;
+  transform: rotate(0deg);
+  transition: 0.25s ease-in-out;
+}
+
+.burger span:nth-of-type(1) {
+  top: 0px;
+  transform-origin: left center;
+}
+
+.burger span:nth-of-type(2) {
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: left center;
+}
+
+.burger span:nth-of-type(3) {
+  top: 100%;
+  transform-origin: left center;
+  transform: translateY(-50%);
+}
+
+.burger input:checked ~ span:nth-of-type(1) {
+  top: 0;
+  left: 5px;
+  transform: rotate(405deg);
+}
+
+.burger input:checked ~ span:nth-of-type(2) {
+  width: 0%;
+  opacity: 0;
+}
+
+.burger input:checked ~ span:nth-of-type(3) {
+  top: 24px;
+  left: 5px;
+  transform: rotate(-405deg);
+}
+
+/*Barra de búsqueda*/
+  /* From Uiverse.io by satyamchaudharydev */
+/* From uiverse.io by @satyamchaudharydev */
+/* removing default style of button */
+.form button {
+  border: none;
+  background: none;
+  color: #8b8ba7;
+}
+/* styling of whole input container */
+.form {
+  display: flex;
+  --timing: 0.3s;
+  --width-of-input: 300px;
+  --height-of-input: 40px;
+  --border-height: 2px;
+  --input-bg: #2c2c2c;
+  --border-color: #d5b25c;
+  --border-radius: 30px;
+  --after-border-radius: 1px;
+  width: var(--width-of-input);
+  height: var(--height-of-input);
+  padding-inline: 0.8em;
+  border-radius: var(--border-radius);
+  transition: border-radius 0.5s ease;
+  background: var(--input-bg, #fff);
+  margin-right: 10px;
+}
+/* styling of Input */
+.input {
+  font-size: 0.9rem;
+  background-color: transparent;
+  width: 100%;
+  height: 100%;
+  padding-inline: 0.5em;
+  padding-block: 0.7em;
+  border: none;
+  color: #fff;
+}
+/* styling of animated border */
+.form:before {
+  content: "";
+  position: absolute;
+  background: var(--border-color);
+  transform: scaleX(0);
+  transform-origin: center;
+  width: 100%;
+  height: var(--border-height);
+  left: 0;
+  bottom: 0;
+  border-radius: 1px;
+  transition: transform var(--timing) ease;
+}
+/* Hover on Input */
+.form:focus-within {
+  border-radius: var(--after-border-radius);
+  border: 2px solid #888;
+}
+
+input:focus {
+  outline: none;
+}
+/* here is code of animated border */
+.form:focus-within:before {
+  transform: scale(1);
+}
+/* styling of close button */
+/* == you can click the close button to remove text == */
+.reset {
+  border: none;
+  background: none;
+  opacity: 0;
+  visibility: hidden;
+}
+/* close button shown when typing */
+input:not(:placeholder-shown) ~ .reset {
+  opacity: 1;
+  visibility: visible;
+}
+/* sizing svg icons */
+.form svg {
+  width: 17px;
+  margin-top: 3px;
+}
+.buscarUsuario {
+  display: flex;
+}
+
+/*Usuiario*/
+
+/*archivos recientes*/
+.archivosRecientes {
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 1;
+  grid-row-end: 2;
+  margin: 10px;
+}
+
+
+/*Carpetas con el nombre*/
+.folders-section {
+  box-sizing: border-box;
+  grid-column-start: 2;
+  grid-row-start: 1;
+  background-color: #121212;
+  border-radius: 10px;
+  margin-top: 10px;
+  padding: 20px;
+  width: 300px;
+  justify-self: center;
+}
+
+.folders-title {
+  color: #c4a14b;
+  font-size: 18px;
+  margin-bottom: 10px;
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #c4a14b;
+}
+
+.folder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.folder-item {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  transform: translateY(-5px);
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.folder-icon {
+  color: #c4a14b;
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+.folder-name {
+  color: #fff;
+  font-size: 14px;
+}
+
+/* From Uiverse.io by 3bdel3ziz-T */
+/*Subir archivo*/
+#chooseFile {
+  margin-top: 20px;
+  grid-column-start: 2;
+  grid-column-end: 3;
+  grid-row-start: 2;
+  grid-row-end: 3;
+}
+.container {
+  --transition: 350ms;
+  --folder-W: 102px;
+  --folder-H: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px;
+  /*background: linear-gradient(135deg, #74aee8, #4b7fc1);*/
+  background-color: #121212;
+  border-radius: 15px;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+  height: 100%;
+  width: 300px;
+  justify-self: center;
+  position: relative;
+  margin: 0px 20px;
+}
+
+.folder {
+  position: absolute;
+  top: 0px;
+  left: calc(50% - 60px);
+  animation: float 2.5s infinite ease-in-out;
+  transition: transform var(--transition) ease;
+}
+
+.folder:hover {
+  transform: scale(1.05);
+}
+
+.folder .front-side,
+.folder .back-side {
+  position: absolute;
+  transition: transform var(--transition);
+  transform-origin: bottom center;
+}
+
+.folder .back-side::before,
+.folder .back-side::after {
+  content: "";
+  display: block;
+  background-color: white;
+  opacity: 0.5;
+  z-index: 0;
+  width: var(--folder-W);
+  height: var(--folder-H);
+  position: absolute;
+  transform-origin: bottom center;
+  border-radius: 15px;
+  transition: transform 350ms;
+  z-index: 0;
+}
+
+.container:hover .back-side::before {
+  transform: rotateX(-5deg) skewX(5deg);
+}
+.container:hover .back-side::after {
+  transform: rotateX(-15deg) skewX(12deg);
+}
+
+.folder .front-side {
+  z-index: 1;
+}
+
+.container:hover .front-side {
+  transform: rotateX(-40deg) skewX(15deg);
+}
+
+.folder .tip {
+  background: linear-gradient(135deg, #ff9a56, #ff6f56);
+  width: 60px;
+  height: 15px;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  position: absolute;
+  top: -10px;
+  z-index: 2;
+}
+
+.folder .cover {
+  background: linear-gradient(135deg, #ffe563, #ffc663);
+  width: var(--folder-W);
+  height: var(--folder-H);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.custom-file-upload {
+  font-size: 1 em;
+  color: #ffffff;
+  text-align: center;
+  background: rgba(18, 18, 18, 0.795);
+  border: 2px solid #d5b25c;
+  border-radius: 10px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background var(--transition) ease;
+  display: inline-block;
+  width: 80%;
+  padding: 10px 35px;
+  position: relative;
+}
+
+.custom-file-upload:hover {
+  background: rgba(51, 49, 49, 0.795);
+}
+
+.custom-file-upload input[type="file"] {
+  display: none;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Responsiva*/
+@media (max-width: 1260px) {
+  .main {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 3fr 1fr;
+  }
+}
+@media (max-width: 900px) {
+  .main {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 3fr 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 3fr 1fr;
+  }
+  .folders-section {
+    grid-column-start: 1;
+    grid-column-end: 2;
+  }
+  .archivosRecientes{
+    grid-row-start: 3;
+    grid-row-end:3;
+  }
+  #chooseFile {
+    grid-column-start: 1;
+    grid-column-end: 2;
+  }
+}
