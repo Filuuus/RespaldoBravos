@@ -2,119 +2,129 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
-}
-
-body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  body {
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .image-side {
+    width: 50%;
+    background-image: url('../img/pexels-max-fischer-5212317.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+  
+  .form-side {
+    width: 50%;
     background-color: #1a1a1a;
     color: white;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.container {
-    display: flex;
-    width: 80%;
-    height: 80vh;
-    background-color: #1a1a1a;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-}
-
-.image-container {
-    flex: 1;
-    overflow: hidden;
-}
-
-.image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.form-container {
-    flex: 1;
-    padding: 40px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-}
-
-.form-content {
+    align-items: center;
+    padding: 2rem;
+  }
+  
+  .login-form {
+    width: 100%;
     max-width: 400px;
-    margin: 0 auto;
-}
-
-h1 {
+  }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .header h1 {
     font-size: 2.5rem;
-    margin-bottom: 10px;
-}
-
-p {
-    color: #ccc;
-    margin-bottom: 30px;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    color: #ccc;
-}
-
-input[type="text"],
-input[type="email"],
-input[type="password"] {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    background-color: #333;
-    color: white;
-    border-radius: 5px;
-}
-
-.captcha {
-    margin: 20px 0;
-}
-
-.btn-registrarse {
-    width: 100%;
-    padding: 15px;
-    background-color: #b39b6d;
-    color: white;
-    border: none;
-    border-radius: 30px;
-    cursor: pointer;
-    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .header p {
+    color: #cccccc;
     font-size: 1rem;
-    text-transform: uppercase;
-    transition: background-color 0.3s;
-}
-
-.btn-registrarse:hover {
-    background-color: #9e8a5e;
-}
-
-.btn-inicio {
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  input[type="text"],
+  input[type="password"] {
     width: 100%;
-    padding: 15px;
-    background-color: #74AEE8;
+    padding: 0.75rem 1rem;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
     color: white;
-    border: none;
-    border-radius: 30px;
-    cursor: pointer;
-    font-weight: bold;
     font-size: 1rem;
+  }
+  
+  input::placeholder {
+    color: #777;
     text-transform: uppercase;
-    transition: background-color 0.3s;
-}
-
-.btn-inicio:hover {
-    background-color: #4b7fc1;
-}
+  }
+  
+  
+  .register-text {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #999;
+    margin-bottom: 1rem;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+  }
+  
+  .btn-register {
+    background-color: #d97706;
+    color: white;
+  }
+  
+  .btn-login {
+    background-color: #64748b;
+    color: white;
+  }
+  
+  .btn-register:hover {
+    background-color: #b45309;
+  }
+  
+  .btn-login:hover {
+    background-color: #475569;
+  }
+  
+  @media (max-width: 768px) {
+    .image-side {
+      display: none;
+    }
+    
+    .form-side {
+      width: 100%;
+    }
+    
+    .button-group {
+      flex-direction: column;
+    }
+  }
