@@ -1,0 +1,36 @@
+# --- Python ---
+# Virtual Environment directory
+venv/
+*.py[cod]
+__pycache__/
+*.so
+
+# --- Environment Variables ---
+# Ignore the .env file containing secrets!
+.env
+
+# --- Flask ---
+# Instance folder (often used for config or local DBs)
+instance/
+*.sqlite
+*.sqlite3
+
+# --- Operating System Files ---
+.DS_Store
+Thumbs.db
+
+# --- IDE / Editor Files ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- Log Files ---
+*.log
+
+# --- Temporary Files ---
+*.tmp
+
+# --- Add other specific files or directories if needed ---
+# Example: If you had a local upload folder (not needed with S3)
+# local_uploads/
