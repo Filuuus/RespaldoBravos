@@ -2,7 +2,7 @@
 
 from datetime import datetime
 # Assuming 'db' is the SQLAlchemy instance initialized in your main app file (e.g., app.py)
-from app import db 
+from extensions import db 
 # Import specific types if needed, or use db.* directly
 # from sqlalchemy import Integer, String, Text, Boolean, DateTime, Date, ForeignKey, UniqueConstraint
 # from sqlalchemy.orm import relationship
