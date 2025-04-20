@@ -11,6 +11,8 @@ from werkzeug.utils import secure_filename
 from flask import render_template, request, redirect, url_for, flash, session 
 from datetime import datetime 
 from functools import wraps 
+import math # Needed for formatting file size
+from flask import send_file
 
 from extensions import db 
 
@@ -56,6 +58,23 @@ except Exception as e:
     print(f"Error initializing Boto3 S3 Client: {e}")
     s3_client = None 
 # ---------------------------------------------------------------------
+
+
+# --- Jinja Custom Filter for File Size ---
+def format_file_size(size_bytes):
+    """Converts bytes to KB, MB, GB, etc."""
+    if size_bytes is None or size_bytes == 0:
+       return "0 B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return f"{s} {size_name[i]}"
+
+# Register the filter with Jinja environment
+app.jinja_env.filters['format_file_size'] = format_file_size
+# ---------------------------------------
+
 
 # --- 4. Import Models ---
 # Models are now imported inside routes/functions where needed
@@ -231,6 +250,232 @@ def upload_route():
         # Categoria is now imported locally within this function
         categories = Categoria.query.order_by(Categoria.nombre).all() 
         return render_template('upload.html', categories=categories)
+
+# --- File Listing Route ---
+@app.route('/files') # Or choose another URL like /dashboard
+@login_required
+def list_files():
+    # --- Import models needed specifically for this route ---
+    from models import Documento, Categoria # Import here
+    # --------------------------------------------------------
+    
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        # Query the database for documents belonging to this user
+        # For now, get all documents regardless of folder
+        # Order by upload date, newest first
+        user_documents = Documento.query.filter_by(id_usuario=user_id)\
+                                     .order_by(Documento.fecha_carga.desc())\
+                                     .all()
+        
+        # We query categories separately IF needed, or rely on relationships
+        # categories = {cat.id_categoria: cat.nombre for cat in Categoria.query.all()}
+        
+    except Exception as e:
+        print(f"Database query error in list_files: {e}")
+        flash('Error retrieving files from database.', 'danger')
+        user_documents = [] # Pass an empty list to template on error
+        # categories = {}
+
+    # Render the template, passing the list of documents
+    return render_template('file_list.html', documents=user_documents)
+
+
+@app.route('/download/<int:doc_id>')
+@login_required # Protect the route
+def download_file(doc_id):
+    # --- Import models needed specifically for this route ---
+    from models import Documento # Import here
+    # --------------------------------------------------------
+
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        # 1. Retrieve the document from the database
+        document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first()
+        if not document:
+            flash('File not found or access denied.', 'danger')
+            return redirect(url_for('list_files'))  # Or handle differently
+
+        # 2. Get the S3 object key
+        s3_key = document.s3_object_key  # Assuming this field contains the S3 key
+
+# 3. Generate a pre-signed URL for the S3 object.
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            # --- CHANGE THIS LINE ---
+            Params={'Bucket': app.config['S3_BUCKET'], 'Key': s3_key}, 
+            # --- END CHANGE ---
+            ExpiresIn=3600  # URL expires in 1 hour
+        )
+
+        # 4. Redirect the user to the presigned URL
+        return redirect(presigned_url)
+
+
+    except Exception as e:
+        print(f"Error downloading file: {e}")
+        flash('Error downloading file.', 'danger')
+        return redirect(url_for('list_files'))
+
+    
+# --- File Deletion Route ---
+@app.route('/delete/<int:doc_id>', methods=['POST']) # Accept only POST requests
+@login_required
+def delete_file(doc_id):
+    # --- Import models needed specifically for this route ---
+    from models import Documento 
+    # --------------------------------------------------------
+    
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        # 1. Find the document record, ensuring it belongs to the current user
+        document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first()
+
+        if not document:
+            flash('File not found or access denied.', 'danger')
+            return redirect(url_for('list_files'))
+
+        # 2. Get S3 details BEFORE deleting DB record
+        s3_bucket = document.s3_bucket
+        s3_key = document.s3_object_key
+        original_filename = document.titulo_original # For flash message
+
+        # 3. Delete the object from S3
+        if s3_client: # Check if client is initialized
+            try:
+                print(f"Deleting S3 object: {s3_key} from bucket {s3_bucket}")
+                s3_client.delete_object(Bucket=s3_bucket, Key=s3_key)
+                print("S3 object deleted successfully.")
+            except Exception as e:
+                # Log the error, but often proceed to delete DB record anyway
+                # Otherwise, you might have an orphaned S3 file if DB delete succeeds later
+                print(f"Error deleting S3 object {s3_key}: {e}")
+                flash(f'Could not delete file from S3 storage, but removing database record. Error: {e}', 'warning')
+        else:
+             flash('S3 client not available. Cannot delete file from storage, but removing database record.', 'warning')
+
+        # 4. Delete the record from the Database
+        db.session.delete(document)
+        db.session.commit()
+        
+        flash(f'File "{original_filename}" deleted successfully.', 'success')
+        
+        # Optional: Log activity
+        # log_activity(user_id, 'DELETE_DOC', detalle=f'Deleted file: {original_filename}, S3 key: {s3_key}')
+
+    except Exception as e:
+        db.session.rollback() # Roll back DB changes if any error occurred during commit
+        print(f"Error deleting file record from database: {e}")
+        flash('An error occurred while deleting the file record.', 'danger')
+
+    # Redirect back to the file list regardless of S3 outcome (if DB delete was attempted)
+    return redirect(url_for('list_files'))
+
+
+# --- File Metadata Edit Route ---
+@app.route('/edit/<int:doc_id>', methods=['GET', 'POST'])
+@login_required
+def edit_file(doc_id):
+    # --- Import models needed specifically for this route ---
+    from models import Documento, Categoria, Carpeta # Import here
+    # --------------------------------------------------------
+
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    # 1. Fetch the document to edit, ensuring ownership
+    # Use first_or_404 to automatically handle not found cases if preferred
+    document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first()
+    if not document:
+        flash('File not found or access denied.', 'danger')
+        return redirect(url_for('list_files')) 
+
+    # --- Handle POST Request (Save Changes) ---
+    if request.method == 'POST':
+        try:
+            # Get updated data from the form
+            new_title = request.form.get('titulo_nuevo', default=None)
+            id_categoria = request.form.get('categoria', default=None, type=int) # Converts to int, None if empty/invalid
+            id_carpeta_str = request.form.get('carpeta', default=None)
+            descripcion = request.form.get('descripcion', default=None)
+            periodo_inicio_str = request.form.get('periodo_inicio', default=None)
+            periodo_fin_str = request.form.get('periodo_fin', default=None)
+            # Checkbox value: 'favorito' key exists in form only if checked
+            favorito = 'favorito' in request.form 
+
+            # Update Folder ID (handle empty string input for root)
+            id_carpeta = None
+            if id_carpeta_str and id_carpeta_str.isdigit():
+                id_carpeta = int(id_carpeta_str)
+                # Optional: Validate folder exists and belongs to user here
+            elif id_carpeta_str == '': # Explicitly empty means root
+                 id_carpeta = None
+            else: # Invalid input, keep original folder? Or error? For now, keep original
+                id_carpeta = document.id_carpeta # Keep original if input is invalid/missing
+
+
+            # Update Title only if a new one was provided
+            if new_title and new_title.strip():
+                 document.titulo_original = secure_filename(new_title.strip()) # Secure the new title
+
+
+            # Update other fields
+            document.id_categoria = id_categoria # Okay to set to None if category cleared
+            document.id_carpeta = id_carpeta
+            document.descripcion = descripcion if descripcion is not None else document.descripcion # Keep original if None
+
+            # Parse and update dates
+            if periodo_inicio_str:
+                document.periodo_inicio = datetime.strptime(periodo_inicio_str, '%Y-%m-%d').date()
+            elif periodo_inicio_str == '': # Allow clearing the date
+                 document.periodo_inicio = None
+            # else: Keep original date if field wasn't submitted or invalid (depends on desired behavior)
+
+            if periodo_fin_str:
+                document.periodo_fin = datetime.strptime(periodo_fin_str, '%Y-%m-%d').date()
+            elif periodo_fin_str == '': # Allow clearing the date
+                 document.periodo_fin = None
+
+            document.favorito = favorito
+
+            # Commit changes to the database
+            db.session.commit()
+            flash(f'Metadata for "{document.titulo_original}" updated successfully!', 'success')
+
+            # Optional: Log activity
+            # log_activity(user_id, 'EDIT_DOC', documento_id=document.id_documento, ...)
+
+            return redirect(url_for('list_files'))
+
+        except Exception as e:
+            db.session.rollback() # Roll back DB changes on error
+            print(f"Error updating document metadata: {e}")
+            flash(f'Error updating metadata: {e}', 'danger')
+            # Re-render the edit form with existing data on error
+            categories = Categoria.query.order_by(Categoria.nombre).all()
+            return render_template('edit_file.html', document=document, categories=categories)
+
+
+    # --- Handle GET Request (Show Edit Form) ---
+    else: # request.method == 'GET'
+        # Fetch categories and potentially folders to populate dropdowns
+        categories = Categoria.query.order_by(Categoria.nombre).all()
+        # folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all() # If needed for dropdown
+        return render_template('edit_file.html', document=document, categories=categories)
 
 # --- Error Handlers ---
 @app.errorhandler(413)
