@@ -17,6 +17,7 @@ from flask import send_file
 from extensions import db 
 from flask_migrate import Migrate
 from models import ActividadUsuario
+from flask import request
 
 load_dotenv() 
 
@@ -312,12 +313,13 @@ def upload_route(parent_folder_id):
                                parent_folder_id=parent_folder_id) # Keep passing this
 
 # --- File Listing Route ---
-@app.route('/files', defaults={'folder_id': None}, methods=['GET']) 
+@app.route('/files', defaults={'folder_id': None}, methods=['GET'])
 @app.route('/files/<int:folder_id>', methods=['GET'])
 @login_required
 def list_files(folder_id):
     # --- Import models needed ---
-    from models import Documento, Categoria, Carpeta 
+    from models import Documento, Categoria, Carpeta, Usuario 
+    from sqlalchemy import asc, desc, text 
     # ----------------------------
     
     user_id = session.get('user_id')
@@ -325,90 +327,144 @@ def list_files(folder_id):
         flash('User session error.', 'danger')
         return redirect(url_for('login'))
 
+    # --- Get Sort Parameters ---
+    sort_by = request.args.get('sort_by', 'name') 
+    sort_dir = request.args.get('sort_dir', 'asc') 
+
+    # --- Determine Sort Columns and Direction ---
+    folder_order_by = Carpeta.nombre 
+    document_order_by = Documento.titulo_original 
+    
+    # Map sort_by parameter
+    if sort_by == 'name':
+        folder_order_by = Carpeta.nombre
+        document_order_by = Documento.titulo_original
+    elif sort_by == 'date':
+        folder_order_by = Carpeta.fecha_modificacion 
+        document_order_by = Documento.fecha_carga
+    elif sort_by == 'type':
+        pass # Document query handles this via join
+    elif sort_by == 'size':
+        folder_order_by = Carpeta.nombre # Keep default for folders
+        document_order_by = Documento.file_size
+
+    # Determine sort direction function
+    if sort_dir == 'desc':
+        folder_order_func = desc
+        document_order_func = desc
+    else: 
+        sort_dir = 'asc' 
+        folder_order_func = asc
+        document_order_func = asc
+        
+    # Initialize lists/variables
     sub_folders = []
     documents_in_folder = []
-    current_folder_name = "My Files (Root)" # Default for root
-    breadcrumbs = [] # Initialize empty list for breadcrumbs
+    current_folder_name = "My Files (Root)" 
+    breadcrumbs = [] 
 
     try:
         # --- Fetch Current Folder and Ancestors (Breadcrumbs) ---
-        current_folder = None
         if folder_id:
             # Use a recursive query to get the path from root to current folder
             sql_query = text("""
                 WITH RECURSIVE folder_path AS (
-                    -- Anchor member: Select the current folder
                     SELECT id_carpeta, nombre, id_carpeta_padre
                     FROM carpetas
                     WHERE id_carpeta = :current_folder_id AND id_usuario = :user_id
-
                     UNION ALL
-
-                    -- Recursive member: Select the parent of the previous level
                     SELECT c.id_carpeta, c.nombre, c.id_carpeta_padre
                     FROM carpetas c
                     JOIN folder_path fp ON c.id_carpeta = fp.id_carpeta_padre
-                    WHERE c.id_usuario = :user_id -- Ensure all ancestors belong to the user
+                    WHERE c.id_usuario = :user_id
                 )
-                -- Select the path (ordering handled in Python)
                 SELECT id_carpeta, nombre, id_carpeta_padre FROM folder_path;
             """)
             
             result = db.session.execute(sql_query, {'current_folder_id': folder_id, 'user_id': user_id})
             
-            # Build the breadcrumb list from the query result
-            path_data = {row.id_carpeta: row for row in result.mappings()} # Fetch all ancestors into a dict
+            try:
+                 all_ancestors = [dict(row) for row in result.mappings()] 
+            except Exception as mapping_e:
+                 print(f"Warning: Error converting breadcrumb query result: {mapping_e}") 
+                 all_ancestors = []
 
-            if folder_id not in path_data: # Check if current folder was found / belongs to user
+            path_data = {row['id_carpeta']: row for row in all_ancestors} 
+
+            if folder_id not in path_data: 
                  flash("Folder not found or access denied.", "warning")
-                 return redirect(url_for('list_files', folder_id=None)) # Redirect to root
+                 return redirect(url_for('list_files', folder_id=None)) 
 
             # Reconstruct path from root to current
+            breadcrumbs = [] 
             curr_id = folder_id
+            visited = set() 
             while curr_id is not None:
+                if curr_id in visited or len(visited) > 20: # Add loop limit
+                    print(f"Warning: Breadcrumb cycle detected or limit reached at {curr_id}") 
+                    breadcrumbs = [] 
+                    break
+                visited.add(curr_id)
+
                 folder_info = path_data.get(curr_id)
                 if folder_info:
-                    # Insert at beginning to get Root -> ... -> Current order
                     breadcrumbs.insert(0, {'id': folder_info['id_carpeta'], 'nombre': folder_info['nombre']}) 
                     curr_id = folder_info['id_carpeta_padre']
                 else:
-                    # Should not happen if query is correct and IDs are valid, but break defensively
-                    print(f"Warning: Could not find ancestor data for ID {curr_id} in path.")
+                    # This case means root (parent is NULL) or data inconsistency
+                    if curr_id in path_data: # It was the actual root folder in path_data
+                         pass # Root reached successfully
+                    else: # Data for curr_id was missing, error
+                         print(f"Warning: Could not find ancestor data for ID {curr_id} in path_data.") 
                     break 
             
-            current_folder_name = breadcrumbs[-1]['nombre'] # Get name from last breadcrumb item
-            current_folder = True # Mark as not root (used only to simplify query below)
+            if breadcrumbs:
+                current_folder_name = breadcrumbs[-1]['nombre'] 
+            else:
+                 # Path reconstruction failed after initial check passed - should be rare
+                 print(f"Warning: Breadcrumb list empty after reconstruction for folder {folder_id}") 
+                 current_folder_name = "Error Loading Name" 
+                 # Optional: redirect to root if breadcrumbs fail badly
+                 # return redirect(url_for('list_files'))
 
-        # --- Fetch Contents of the Current Folder ---
-        # Query for sub-folders within the current folder_id for this user
+        # --- Fetch Contents with Sorting ---
         sub_folders = Carpeta.query.filter_by(
             id_usuario=user_id, 
-            id_carpeta_padre=folder_id # None for root level
-        ).order_by(Carpeta.nombre).all()
+            id_carpeta_padre=folder_id 
+        ).order_by(folder_order_func(folder_order_by)).all()
 
-        # Query for documents within the current folder_id for this user
-        documents_in_folder = Documento.query.filter_by(
+        doc_query = Documento.query.filter_by(
             id_usuario=user_id, 
-            id_carpeta=folder_id # None for root level
-        ).order_by(Documento.titulo_original).all()
+            id_carpeta=folder_id 
+        )
+        # Add join/order for type sort
+        if sort_by == 'type':
+             doc_query = doc_query.outerjoin(Categoria, Documento.id_categoria == Categoria.id_categoria)\
+                                  .order_by(document_order_func(Categoria.nombre), asc(Documento.titulo_original))
+        else:
+             doc_query = doc_query.order_by(document_order_func(document_order_by))
+             
+        documents_in_folder = doc_query.all()
         
     except Exception as e:
-        db.session.rollback() # Rollback in case the execute caused issues
-        print(f"Database query error in list_files: {e}")
+        db.session.rollback() 
+        print(f"Database query error in list_files: {e}") 
         flash('Error retrieving contents from database.', 'danger')
         sub_folders = []
         documents_in_folder = []
         breadcrumbs = []
         current_folder_name = "Error"
 
-    # Render the template, passing the lists and breadcrumbs
+    # Render the template
     return render_template(
         'file_list.html', 
         folders=sub_folders, 
         documents=documents_in_folder,
         current_folder_id=folder_id,
         current_folder_name=current_folder_name,
-        breadcrumbs=breadcrumbs # Pass the breadcrumb list
+        breadcrumbs=breadcrumbs,
+        sort_by=sort_by, 
+        sort_dir=sort_dir
     )
 
 

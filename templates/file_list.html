@@ -74,10 +74,42 @@
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Type</th> {# Added Type column #}
-                    <th scope="col">Date Modified/Uploaded</th> {# Changed Header #}
-                    <th scope="col">Size</th>
+                    {# --- NAME Header --- #}
+                    <th scope="col">
+                        {% set next_dir_name = 'desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc' %}
+                        <a href="{{ url_for('list_files', folder_id=current_folder_id, sort_by='name', sort_dir=next_dir_name) }}">Name</a>
+                        {% if sort_by == 'name' %}
+                            <i class="bi bi-sort-{{ 'alpha-up' if sort_dir == 'asc' else 'alpha-down' }}"></i>
+                        {% endif %}
+                    </th>
+                    
+                    {# --- TYPE Header --- #}
+                    <th scope="col">
+                        {% set next_dir_type = 'desc' if sort_by == 'type' and sort_dir == 'asc' else 'asc' %}
+                        <a href="{{ url_for('list_files', folder_id=current_folder_id, sort_by='type', sort_dir=next_dir_type) }}">Type</a>
+                         {% if sort_by == 'type' %}
+                            <i class="bi bi-sort-{{ 'alpha-up' if sort_dir == 'asc' else 'alpha-down' }}"></i>
+                        {% endif %}
+                   </th>
+                    
+                    {# --- DATE Header --- #}
+                    <th scope="col">
+                        {% set next_dir_date = 'desc' if sort_by == 'date' and sort_dir == 'asc' else 'asc' %}
+                        <a href="{{ url_for('list_files', folder_id=current_folder_id, sort_by='date', sort_dir=next_dir_date) }}">Date Modified/Uploaded</a>
+                        {% if sort_by == 'date' %}
+                            <i class="bi bi-sort-{{ 'down' if sort_dir == 'asc' else 'up' }}"></i> {# Numeric/Date sort icons #}
+                        {% endif %}
+                    </th>
+                    
+                    {# --- SIZE Header --- #}
+                     <th scope="col">
+                         {% set next_dir_size = 'desc' if sort_by == 'size' and sort_dir == 'asc' else 'asc' %}
+                         <a href="{{ url_for('list_files', folder_id=current_folder_id, sort_by='size', sort_dir=next_dir_size) }}">Size</a>
+                         {% if sort_by == 'size' %}
+                            <i class="bi bi-sort-{{ 'down' if sort_dir == 'asc' else 'up' }}"></i> {# Numeric sort icons #}
+                        {% endif %}
+                    </th>
+
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
