@@ -16,6 +16,7 @@ from flask import send_file
 
 from extensions import db 
 from flask_migrate import Migrate
+from models import ActividadUsuario
 
 load_dotenv() 
 
@@ -112,17 +113,21 @@ def login_required(f):
 # --- Dummy Login/Logout Routes (Placeholders) ---
 @app.route('/login') 
 def login():
-    # This route doesn't need models currently
-    session['user_id'] = 1 # Example User ID
+    user_id_to_log = 1 # Use the dummy ID
+    session['user_id'] = user_id_to_log 
     flash('You were logged in (dummy login).', 'success')
-    return redirect(request.args.get('next') or url_for('hello_world')) 
+    # Log after setting session
+    log_activity(user_id=user_id_to_log, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr) 
+    return redirect(request.args.get('next') or url_for('hello_world'))
 
 @app.route('/logout')
 def logout():
-     # This route doesn't need models currently
+    user_id_to_log = session.get('user_id') # Get ID *before* popping
     session.pop('user_id', None) 
     flash('You were logged out.', 'info')
-    return redirect(url_for('login')) 
+    if user_id_to_log: # Only log if a user was actually logged in
+         log_activity(user_id=user_id_to_log, activity_type='LOGOUT', ip_address=request.remote_addr)
+    return redirect(url_for('login'))
 
 # --- File Upload Route ---
 # Modify route definition to accept optional parent folder ID
@@ -253,9 +258,16 @@ def upload_route(parent_folder_id):
                 db.session.commit()
                 flash(f'File "{original_filename}" uploaded successfully!', 'success')
                 
-                # Optional: Log activity 
-                # print("--- DEBUG: Logging activity...") # DEBUG: Log
-                # log_activity(...) 
+                # --- Log Call ---
+                log_activity(
+                    user_id=user_id, 
+                    activity_type='UPLOAD_DOC', 
+                    document_id=new_documento.id_documento, # Get ID from newly created object
+                    folder_id=parent_folder_id_to_save,
+                    ip_address=request.remote_addr,
+                    details=f"Uploaded: {original_filename}"
+                )
+                # --------------------
 
                 # Redirect back to the folder where file was uploaded
                 return redirect(url_for('list_files', folder_id=parent_folder_id_to_save)) 
@@ -406,14 +418,22 @@ def download_file(doc_id):
         # 2. Get the S3 object key
         s3_key = document.s3_object_key  # Assuming this field contains the S3 key
 
-# 3. Generate a pre-signed URL for the S3 object.
+        # 3. Generate a pre-signed URL for the S3 object.
         presigned_url = s3_client.generate_presigned_url(
             'get_object',
-            # --- CHANGE THIS LINE ---
             Params={'Bucket': app.config['S3_BUCKET'], 'Key': s3_key}, 
-            # --- END CHANGE ---
             ExpiresIn=3600  # URL expires in 1 hour
         )
+
+        # --- Add Log Call ---
+        log_activity(
+            user_id=user_id, 
+            activity_type='DOWNLOAD_DOC_LINK', # Log link generation, not actual download
+            document_id=doc_id,
+            ip_address=request.remote_addr,
+            details=f'Generated download link for: {document.titulo_original}'
+        )
+        # --------------------
 
         # 4. Redirect the user to the presigned URL
         return redirect(presigned_url)
@@ -424,7 +444,39 @@ def download_file(doc_id):
         flash('Error downloading file.', 'danger')
         return redirect(url_for('list_files'))
 
+
+# --- Activity Logging Helper Function ---
+def log_activity(user_id, activity_type, ip_address=None, document_id=None, folder_id=None, details=None):
+    """Logs an activity to the database."""
+    from extensions import db 
     
+    # Get IP address from request if not provided
+    if ip_address is None and request:
+        ip_address = request.remote_addr
+
+    try:
+        log_entry = ActividadUsuario(
+            id_usuario=user_id,
+            tipo_actividad=activity_type,
+            direccion_ip=ip_address,
+            id_documento=document_id,
+            id_carpeta=folder_id,
+            detalle=details
+            # 'fecha' column has a default value in the database/model
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+        print(f"Activity Logged: User {user_id} - {activity_type}") # Optional console log
+    except Exception as e:
+        db.session.rollback()
+        # Log the error to the console or a file, but don't let logging failure stop the main action
+        print(f"!!! ERROR logging activity: {e}")
+        print(f"!!! Original log data: User={user_id}, Type={activity_type}, IP={ip_address}, Doc={document_id}, Folder={folder_id}, Details={details}")
+
+# ---------------------------------------
+
+
+
 # --- File Deletion Route ---
 @app.route('/delete/<int:doc_id>', methods=['POST']) # Accept only POST requests
 @login_required
@@ -465,14 +517,22 @@ def delete_file(doc_id):
         else:
              flash('S3 client not available. Cannot delete file from storage, but removing database record.', 'warning')
 
+        # --- Log Call ---
+        log_activity(
+            user_id=user_id, 
+            activity_type='DELETE_DOC', 
+            document_id=None, # Log the ID that was deleted
+            ip_address=request.remote_addr,
+            details=f"Deleted file: {original_filename} (S3 Key: {s3_key})"
+        )
+        # --------------------
+
         # 4. Delete the record from the Database
         db.session.delete(document)
         db.session.commit()
         
         flash(f'File "{original_filename}" deleted successfully.', 'success')
         
-        # Optional: Log activity
-        # log_activity(user_id, 'DELETE_DOC', detalle=f'Deleted file: {original_filename}, S3 key: {s3_key}')
 
     except Exception as e:
         db.session.rollback() # Roll back DB changes if any error occurred during commit
@@ -555,8 +615,15 @@ def edit_file(doc_id):
             db.session.commit()
             flash(f'Metadata for "{document.titulo_original}" updated successfully!', 'success')
 
-            # Optional: Log activity
-            # log_activity(user_id, 'EDIT_DOC', documento_id=document.id_documento, ...)
+            # --- Log Call ---
+            log_activity(
+                user_id=user_id, 
+                activity_type='EDIT_DOC_METADATA', 
+                document_id=doc_id, # doc_id is parameter to the route
+                ip_address=request.remote_addr,
+                details=f"Edited metadata for: {document.titulo_original}"
+            )
+            # --------------------
 
             return redirect(url_for('list_files'))
 
@@ -615,6 +682,17 @@ def create_folder(parent_folder_id=None): # Default parent is None (root)
             db.session.add(new_folder)
             db.session.commit()
             flash(f'Folder "{folder_name}" created successfully.', 'success')
+
+            # --- Add Log Call ---
+            log_activity(
+                user_id=user_id, 
+                activity_type='CREATE_FOLDER', 
+                folder_id=new_folder.id_carpeta, # Get ID from new object
+                parent_folder_id_param = parent_folder_id, # Capture the parent context
+                ip_address=request.remote_addr,
+                details=f'Created folder: {folder_name}'
+            )
+            # --------------------
             
     except Exception as e:
         db.session.rollback()
@@ -663,13 +741,27 @@ def delete_folder(folder_id):
             # Redirect back to the view containing the non-empty folder
             return redirect(url_for('list_files', folder_id=parent_folder_id)) 
         else:
+            # Store details before deleting
+            folder_id_to_log = folder_to_delete.id_carpeta
+            folder_name_to_log = folder_to_delete.nombre
+            parent_id_to_log = folder_to_delete.id_carpeta_padre
+
+            # Log call BEFORE DB delete/commit - correct
+            log_activity(
+                user_id=user_id, 
+                activity_type='DELETE_FOLDER', 
+                folder_id=None, 
+                ip_address=request.remote_addr,
+                details=f'Deleted empty folder: {folder_name_to_log} (Parent ID: {parent_id_to_log})' # Add parent ID here
+            )
+            # ----------------------------------------
             # Folder is empty, proceed with deletion
             db.session.delete(folder_to_delete)
             db.session.commit()
             flash(f'Folder "{folder_name}" deleted successfully.', 'success')
+            parent_folder_id = parent_id_to_log # Ensure redirect uses stored parent ID
             
-            # Optional: Log activity
-            # log_activity(user_id, 'DELETE_FOLDER', detalle=f'Deleted empty folder: {folder_name} (ID: {folder_id})')
+
 
     except Exception as e:
         db.session.rollback()
@@ -742,8 +834,16 @@ def rename_folder(folder_id):
                 db.session.commit()
                 flash(f'Folder renamed to "{new_name}" successfully.', 'success')
 
-                # Optional: Log activity
-                # log_activity(user_id, 'RENAME_FOLDER', carpeta_id=folder_id, detalle=f'Renamed folder to: {new_name}')
+
+                # --- Log Call ---
+                log_activity(
+                    user_id=user_id, 
+                    activity_type='RENAME_FOLDER', 
+                    folder_id=folder_id, # folder_id is parameter to the route
+                    ip_address=request.remote_addr,
+                    details=f'Renamed folder to: {new_name}'
+                )
+                # --------------------
                 
                 # Redirect back to the parent folder view
                 return redirect(url_for('list_files', folder_id=parent_folder_id))
