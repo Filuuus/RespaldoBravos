@@ -122,36 +122,59 @@ def logout():
     return redirect(url_for('login')) 
 
 # --- File Upload Route ---
-@app.route('/upload', methods=['GET', 'POST'])
+# Modify route definition to accept optional parent folder ID
+@app.route('/upload', defaults={'parent_folder_id': None}, methods=['GET', 'POST'])
+@app.route('/upload/<int:parent_folder_id>', methods=['GET', 'POST'])
 @login_required # Protect this route
-def upload_route():
+def upload_route(parent_folder_id):
     # --- Import models needed specifically for this route ---
-    from models import Documento, Categoria 
-    # You might need Carpeta later if you add folder validation
-    # from models import Carpeta 
+    from models import Documento, Categoria, Carpeta
     # --------------------------------------------------------
+
+    # Optional: Validate parent_folder_id belongs to user if not None (in GET)
+    if request.method == 'GET' and parent_folder_id is not None:
+        user_id = session.get('user_id')
+        parent_folder = Carpeta.query.filter_by(id_carpeta=parent_folder_id, id_usuario=user_id).first()
+        if not parent_folder:
+             flash("Target folder not found or access denied.", "warning")
+             return redirect(url_for('list_files')) # Redirect to root
 
     # --- Handle POST Request (File Upload) ---
     if request.method == 'POST':
         user_id = session.get('user_id')
-        # We assume user_id exists because of @login_required, but a check is still good
         if not user_id: 
             flash('User session error.', 'danger')
             return redirect(url_for('login'))
 
+        # 1. Check file part
         if 'file' not in request.files or request.files['file'].filename == '':
             flash('No selected file.', 'warning')
             return redirect(request.url)
         
         file = request.files['file']
-        
-        # Get other form data 
-        id_categoria = request.form.get('categoria', default=None, type=int)
-        id_carpeta_str = request.form.get('carpeta', default=None) 
-        id_carpeta = None
-        if id_carpeta_str and id_carpeta_str.isdigit():
-             id_carpeta = int(id_carpeta_str)
 
+        # 3. Get other form data 
+        # Get parent folder ID from hidden field
+        parent_folder_id_from_form = request.form.get('parent_folder_id', default=None)
+
+        # Logic to determine folder ID to save
+        parent_folder_id_to_save = None
+        if parent_folder_id_from_form == '': # Explicitly empty string means root
+            parent_folder_id_to_save = None
+        elif parent_folder_id_from_form and parent_folder_id_from_form.isdigit():
+            parent_folder_id_to_save = int(parent_folder_id_from_form)
+            # Re-validate this ID belongs to user (important for security)
+            user_id_for_validation = session.get('user_id') # Ensure user_id is fresh
+            parent_folder = Carpeta.query.filter_by(id_carpeta=parent_folder_id_to_save, id_usuario=user_id_for_validation).first()
+            if not parent_folder:
+                  flash("Invalid target folder specified.", "danger")
+                  # Redirect back to the upload form for the *intended* parent, or root?
+                  return redirect(url_for('upload_route', parent_folder_id=parent_folder_id)) 
+        else: 
+            # If form field exists but isn't empty or digit, default to root? Or error?
+            parent_folder_id_to_save = None 
+
+        id_categoria = request.form.get('categoria', default=None, type=int)
         descripcion = request.form.get('descripcion', default=None)
         periodo_inicio_str = request.form.get('periodo_inicio', default=None)
         periodo_fin_str = request.form.get('periodo_fin', default=None)
@@ -173,38 +196,42 @@ def upload_route():
         if file: 
             original_filename = secure_filename(file.filename)
             mime_type = file.mimetype
+            # Get file size accurately
+            current_pos = file.tell() # Remember current position
             file.seek(0, os.SEEK_END) 
             file_size = file.tell() 
-            file.seek(0) 
+            file.seek(current_pos) # Reset stream position to where it was
             
+
+            # Check against INTEGER limit
             if file_size > 2147483647: 
                  flash(f'File size ({file_size} bytes) exceeds the database limit (2.14 GB).', 'danger')
                  return redirect(request.url)
 
+            # Generate unique S3 key
             s3_key = f"user_{user_id}/{uuid.uuid4()}_{original_filename}"
 
+            # Check S3 client
             if not s3_client:
-                flash('S3 client not available. Cannot upload file.', 'danger')
-                return redirect(request.url)
+                 flash('S3 client not available. Cannot upload file.', 'danger')
+                 return redirect(request.url)
                 
-            # Upload to S3
+            # 7. Upload to S3
             try:
-                print(f"Uploading {original_filename} to S3 bucket {app.config['S3_BUCKET']} with key {s3_key}")
                 s3_client.upload_fileobj(
                     file,                   
                     app.config['S3_BUCKET'],
                     s3_key,                 
                     ExtraArgs={'ContentType': mime_type}
                 )
-                print("Upload to S3 successful.")
+
             except Exception as e: 
-                print(f"S3 Upload Error: {e}")
                 flash(f'Error uploading file to S3: {e}', 'danger')
                 return redirect(request.url)
 
-            # Save metadata to Database
+            # 8. Save metadata to Database
             try:
-                # Documento is now imported locally within this function
+                # Documento should already be imported from start of function
                 new_documento = Documento( 
                     titulo_original=original_filename,
                     descripcion=descripcion,
@@ -213,7 +240,7 @@ def upload_route():
                     mime_type=mime_type,
                     file_size=file_size, 
                     id_usuario=user_id,
-                    id_carpeta=id_carpeta, 
+                    id_carpeta=parent_folder_id_to_save, # Use validated/determined folder ID
                     id_categoria=id_categoria, 
                     periodo_inicio=periodo_inicio,
                     periodo_fin=periodo_fin,
@@ -223,40 +250,42 @@ def upload_route():
                 db.session.commit()
                 flash(f'File "{original_filename}" uploaded successfully!', 'success')
                 
-                return redirect(url_for('hello_world')) 
+                # Optional: Log activity 
+                # print("--- DEBUG: Logging activity...") # DEBUG: Log
+                # log_activity(...) 
+
+                # Redirect back to the folder where file was uploaded
+                return redirect(url_for('list_files', folder_id=parent_folder_id_to_save)) 
 
             except Exception as e:
                 db.session.rollback() 
-                print(f"Database Error: {e}")
                 flash(f'Error saving file metadata to database: {e}', 'danger')
                 
                 # Attempt to delete orphaned S3 object
                 try:
-                    print(f"Attempting to delete orphaned S3 object: {s3_key}")
                     s3_client.delete_object(Bucket=app.config['S3_BUCKET'], Key=s3_key)
-                    print("Orphaned S3 object deleted.")
                 except Exception as s3_e:
-                    print(f"Could not delete orphaned S3 object {s3_key}: {s3_e}")
                     flash('Database error occurred. Orphaned file might remain in storage.', 'warning')
                     
-                return redirect(request.url)
+                return redirect(request.url) # Redirect back to original upload URL? Or list?
 
         else: 
              flash('File processing error.', 'danger')
              return redirect(request.url)
 
     # --- Handle GET Request (Display Upload Form) ---
-    else: 
-        # Categoria is now imported locally within this function
+    else: # request.method == 'GET'
+        # Categoria should already be imported from start of function
         categories = Categoria.query.order_by(Categoria.nombre).all() 
-        return render_template('upload.html', categories=categories)
+        return render_template('upload.html', categories=categories, parent_folder_id=parent_folder_id)
 
 # --- File Listing Route ---
-@app.route('/files') # Or choose another URL like /dashboard
+@app.route('/files', defaults={'folder_id': None}, methods=['GET']) 
+@app.route('/files/<int:folder_id>', methods=['GET'])
 @login_required
-def list_files():
+def list_files(folder_id):
     # --- Import models needed specifically for this route ---
-    from models import Documento, Categoria # Import here
+    from models import Documento, Categoria, Carpeta 
     # --------------------------------------------------------
     
     user_id = session.get('user_id')
@@ -265,24 +294,43 @@ def list_files():
         return redirect(url_for('login'))
 
     try:
-        # Query the database for documents belonging to this user
-        # For now, get all documents regardless of folder
-        # Order by upload date, newest first
-        user_documents = Documento.query.filter_by(id_usuario=user_id)\
-                                     .order_by(Documento.fecha_carga.desc())\
-                                     .all()
+        # Query for sub-folders within the current folder_id for this user
+        sub_folders = Carpeta.query.filter_by(
+            id_usuario=user_id, 
+            id_carpeta_padre=folder_id # None for root level
+        ).order_by(Carpeta.nombre).all()
+
+        # Query for documents within the current folder_id for this user
+        documents_in_folder = Documento.query.filter_by(
+            id_usuario=user_id, 
+            id_carpeta=folder_id # None for root level
+        ).order_by(Documento.titulo_original).all()
         
-        # We query categories separately IF needed, or rely on relationships
-        # categories = {cat.id_categoria: cat.nombre for cat in Categoria.query.all()}
-        
+        # TODO: Add logic later to get parent folder info for breadcrumbs/navigation
+        current_folder_name = "My Files (Root)"
+        if folder_id:
+             current_folder = Carpeta.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first()
+             if current_folder:
+                 current_folder_name = current_folder.nombre
+             else:
+                 flash("Folder not found.", "warning")
+                 return redirect(url_for('list_files', folder_id=None)) # Redirect to root if folder invalid
+
     except Exception as e:
         print(f"Database query error in list_files: {e}")
-        flash('Error retrieving files from database.', 'danger')
-        user_documents = [] # Pass an empty list to template on error
-        # categories = {}
+        flash('Error retrieving contents from database.', 'danger')
+        sub_folders = []
+        documents_in_folder = []
+        current_folder_name = "Error"
 
-    # Render the template, passing the list of documents
-    return render_template('file_list.html', documents=user_documents)
+    # Render the template, passing both lists and current folder info
+    return render_template(
+        'file_list.html', 
+        folders=sub_folders, 
+        documents=documents_in_folder,
+        current_folder_id=folder_id,
+        current_folder_name=current_folder_name
+    )
 
 
 @app.route('/download/<int:doc_id>')
@@ -476,6 +524,55 @@ def edit_file(doc_id):
         categories = Categoria.query.order_by(Categoria.nombre).all()
         # folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all() # If needed for dropdown
         return render_template('edit_file.html', document=document, categories=categories)
+    
+    # --- Folder Creation Route ---
+@app.route('/create_folder', methods=['POST']) # Only accept POST requests
+@app.route('/create_folder/<int:parent_folder_id>', methods=['POST']) # Allow parent ID in URL
+@login_required
+def create_folder(parent_folder_id=None): # Default parent is None (root)
+    # --- Import models needed specifically for this route ---
+    from models import Carpeta 
+    # --------------------------------------------------------
+
+    user_id = session.get('user_id')
+    # ... (rest of validation for user_id and folder_name as before) ...
+    folder_name = request.form.get('folder_name', '').strip()
+    if not folder_name:
+        flash('Folder name cannot be empty.', 'warning')
+        # Redirect back to the specific folder view if parent_folder_id exists
+        return redirect(url_for('list_files', folder_id=parent_folder_id)) 
+
+    # TODO: Validate parent_folder_id belongs to user if it's not None
+
+    try:
+        # Check if folder exists with same name under the *specific parent*
+        existing_folder = Carpeta.query.filter_by(
+            id_usuario=user_id,
+            id_carpeta_padre=parent_folder_id, # Use the passed parent ID
+            nombre=folder_name
+        ).first()
+
+        if existing_folder:
+            flash(f'A folder named "{folder_name}" already exists here.', 'warning')
+        else:
+            # Create the new folder with the correct parent ID
+            new_folder = Carpeta(
+                nombre=folder_name,
+                id_usuario=user_id,
+                id_carpeta_padre=parent_folder_id 
+            )
+            db.session.add(new_folder)
+            db.session.commit()
+            flash(f'Folder "{folder_name}" created successfully.', 'success')
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating folder: {e}")
+        flash('An error occurred while creating the folder.', 'danger')
+
+    # Redirect back to the folder view where the creation happened
+    return redirect(url_for('list_files', folder_id=parent_folder_id))
+
 
 # --- Error Handlers ---
 @app.errorhandler(413)
