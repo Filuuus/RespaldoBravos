@@ -54,10 +54,17 @@
             </div>
             
             <div class="mb-3">
-                <label for="carpeta" class="form-label">Folder ID (Optional - Root if blank)</label>
-                 {# Pre-fill the current folder ID #}
-                <input type="number" class="form-control" name="carpeta" id="carpeta" placeholder="Enter Folder ID" value="{{ document.id_carpeta if document.id_carpeta is not none else '' }}">
-                </div>
+                <label for="carpeta" class="form-label">Folder</label>
+                 {# Replace input with select #}
+                 <select name="carpeta" id="carpeta" class="form-select">
+                    <option value="">-- Root Folder --</option> {# Empty value for root #}
+                    {% for folder in folders %}
+                        <option value="{{ folder.id_carpeta }}" {% if document.id_carpeta == folder.id_carpeta %}selected{% endif %}>
+                            {{ folder.nombre }} {# Display folder name #}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
             <div class="mb-3">
                 <label for="descripcion" class="form-label">Description (Optional)</label>

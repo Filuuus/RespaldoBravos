@@ -161,26 +161,28 @@ def upload_route(parent_folder_id):
         
         file = request.files['file']
 
-        # 3. Get other form data 
-        # Get parent folder ID from hidden field
-        parent_folder_id_from_form = request.form.get('parent_folder_id', default=None)
+    # 3. Get other form data 
+        id_categoria = request.form.get('categoria', default=None, type=int)
 
-        # Logic to determine folder ID to save
-        parent_folder_id_to_save = None
-        if parent_folder_id_from_form == '': # Explicitly empty string means root
-            parent_folder_id_to_save = None
-        elif parent_folder_id_from_form and parent_folder_id_from_form.isdigit():
-            parent_folder_id_to_save = int(parent_folder_id_from_form)
-            # Re-validate this ID belongs to user (important for security)
-            user_id_for_validation = session.get('user_id') # Ensure user_id is fresh
+        # --- Adjust folder ID retrieval ---
+        id_carpeta_str = request.form.get('carpeta', default='') # Get submitted value (empty string for root)
+        if id_carpeta_str == '':
+            parent_folder_id_to_save = None # Root folder
+        elif id_carpeta_str.isdigit():
+            parent_folder_id_to_save = int(id_carpeta_str)
+            # Re-validate this ID belongs to user (important!) - You already have this logic
+            user_id_for_validation = session.get('user_id')
+            from models import Carpeta # Import if needed
             parent_folder = Carpeta.query.filter_by(id_carpeta=parent_folder_id_to_save, id_usuario=user_id_for_validation).first()
             if not parent_folder:
-                  flash("Invalid target folder specified.", "danger")
-                  # Redirect back to the upload form for the *intended* parent, or root?
-                  return redirect(url_for('upload_route', parent_folder_id=parent_folder_id)) 
-        else: 
-            # If form field exists but isn't empty or digit, default to root? Or error?
-            parent_folder_id_to_save = None 
+                flash("Invalid target folder specified.", "danger")
+                # Redirect appropriately, maybe back to upload form?
+                return redirect(url_for('upload_route', parent_folder_id=parent_folder_id)) 
+        else:
+            # Invalid value submitted? Default to root or show error?
+            flash("Invalid folder selection.", "warning")
+            parent_folder_id_to_save = None # Defaulting to root on error
+        # ------------------------------------
 
         id_categoria = request.form.get('categoria', default=None, type=int)
         descripcion = request.form.get('descripcion', default=None)
@@ -288,11 +290,26 @@ def upload_route(parent_folder_id):
              flash('File processing error.', 'danger')
              return redirect(request.url)
 
-    # --- Handle GET Request (Display Upload Form) ---
+# --- Handle GET Request (Display Upload Form) ---
     else: # request.method == 'GET'
-        # Categoria should already be imported from start of function
-        categories = Categoria.query.order_by(Categoria.nombre).all() 
-        return render_template('upload.html', categories=categories, parent_folder_id=parent_folder_id)
+        # Import models needed for GET request
+        from models import Categoria, Carpeta 
+
+        user_id = session.get('user_id') # Need user_id to fetch folders
+        if not user_id: # Should be caught by @login_required, but check anyway
+             flash("Login required.", "warning")
+             return redirect(url_for('login'))
+
+        categories = Categoria.query.order_by(Categoria.nombre).all()
+        # --- Fetch all folders for this user ---
+        user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+        # ---------------------------------------
+
+        # Pass folders list and parent_folder_id to the template
+        return render_template('upload.html', 
+                               categories=categories, 
+                               folders=user_folders, # Pass folders
+                               parent_folder_id=parent_folder_id) # Keep passing this
 
 # --- File Listing Route ---
 @app.route('/files', defaults={'folder_id': None}, methods=['GET']) 
@@ -548,7 +565,8 @@ def delete_file(doc_id):
 @login_required
 def edit_file(doc_id):
     # --- Import models needed specifically for this route ---
-    from models import Documento, Categoria, Carpeta # Import here
+    # Import all needed models at the start of the function
+    from models import Documento, Categoria, Carpeta 
     # --------------------------------------------------------
 
     user_id = session.get('user_id')
@@ -557,57 +575,76 @@ def edit_file(doc_id):
         return redirect(url_for('login'))
 
     # 1. Fetch the document to edit, ensuring ownership
-    # Use first_or_404 to automatically handle not found cases if preferred
-    document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first()
+    # Using first() and checking is fine, first_or_404() is an alternative
+    document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first() 
     if not document:
         flash('File not found or access denied.', 'danger')
         return redirect(url_for('list_files')) 
+
+    # Store parent ID for redirection after POST
+    parent_folder_id = document.id_carpeta 
 
     # --- Handle POST Request (Save Changes) ---
     if request.method == 'POST':
         try:
             # Get updated data from the form
             new_title = request.form.get('titulo_nuevo', default=None)
-            id_categoria = request.form.get('categoria', default=None, type=int) # Converts to int, None if empty/invalid
-            id_carpeta_str = request.form.get('carpeta', default=None)
+            # Handle category - ensure None is stored if "" is submitted
+            id_categoria_str = request.form.get('categoria', default='')
+            id_categoria = int(id_categoria_str) if id_categoria_str.isdigit() else None
+            
+            # --- Correctly process folder ID from dropdown ---
+            id_carpeta_str = request.form.get('carpeta', default='') # Get submitted value ("" for root)
+            if id_carpeta_str == '':
+                id_carpeta = None # Root folder selected
+            elif id_carpeta_str.isdigit():
+                id_carpeta_to_check = int(id_carpeta_str)
+                # Validate folder exists and belongs to user
+                folder_check = Carpeta.query.filter_by(id_carpeta=id_carpeta_to_check, id_usuario=user_id).first()
+                if folder_check:
+                    id_carpeta = id_carpeta_to_check # Use the valid ID
+                else:
+                    flash("Invalid folder selected. Keeping original.", "warning")
+                    id_carpeta = document.id_carpeta # Keep original if invalid selection
+            else:
+                # Invalid non-digit value submitted? Keep original
+                flash("Invalid folder value submitted. Keeping original.", "warning")
+                id_carpeta = document.id_carpeta 
+            # --------------------------------------------------
+            
             descripcion = request.form.get('descripcion', default=None)
             periodo_inicio_str = request.form.get('periodo_inicio', default=None)
             periodo_fin_str = request.form.get('periodo_fin', default=None)
-            # Checkbox value: 'favorito' key exists in form only if checked
             favorito = 'favorito' in request.form 
 
-            # Update Folder ID (handle empty string input for root)
-            id_carpeta = None
-            if id_carpeta_str and id_carpeta_str.isdigit():
-                id_carpeta = int(id_carpeta_str)
-                # Optional: Validate folder exists and belongs to user here
-            elif id_carpeta_str == '': # Explicitly empty means root
-                 id_carpeta = None
-            else: # Invalid input, keep original folder? Or error? For now, keep original
-                id_carpeta = document.id_carpeta # Keep original if input is invalid/missing
-
-
-            # Update Title only if a new one was provided
+            # Update Title only if a new one was provided and non-empty
             if new_title and new_title.strip():
-                 document.titulo_original = secure_filename(new_title.strip()) # Secure the new title
-
+                 # Consider adding validation for title length if needed
+                 document.titulo_original = secure_filename(new_title.strip()) 
 
             # Update other fields
-            document.id_categoria = id_categoria # Okay to set to None if category cleared
-            document.id_carpeta = id_carpeta
-            document.descripcion = descripcion if descripcion is not None else document.descripcion # Keep original if None
+            document.id_categoria = id_categoria 
+            document.id_carpeta = id_carpeta # Use the validated ID from dropdown logic
+            document.descripcion = descripcion # Allow setting description to empty string if desired
 
-            # Parse and update dates
-            if periodo_inicio_str:
-                document.periodo_inicio = datetime.strptime(periodo_inicio_str, '%Y-%m-%d').date()
-            elif periodo_inicio_str == '': # Allow clearing the date
-                 document.periodo_inicio = None
-            # else: Keep original date if field wasn't submitted or invalid (depends on desired behavior)
-
-            if periodo_fin_str:
-                document.periodo_fin = datetime.strptime(periodo_fin_str, '%Y-%m-%d').date()
-            elif periodo_fin_str == '': # Allow clearing the date
-                 document.periodo_fin = None
+            # Parse and update dates (Allow clearing dates)
+            if periodo_inicio_str is not None: # Check if field was submitted
+                 if periodo_inicio_str == '':
+                     document.periodo_inicio = None
+                 else:
+                     try:
+                         document.periodo_inicio = datetime.strptime(periodo_inicio_str, '%Y-%m-%d').date()
+                     except ValueError:
+                          flash('Invalid start date format ignored. Use YYYY-MM-DD.', 'warning')
+            
+            if periodo_fin_str is not None: # Check if field was submitted
+                 if periodo_fin_str == '':
+                      document.periodo_fin = None
+                 else:
+                      try:
+                          document.periodo_fin = datetime.strptime(periodo_fin_str, '%Y-%m-%d').date()
+                      except ValueError:
+                           flash('Invalid end date format ignored. Use YYYY-MM-DD.', 'warning')
 
             document.favorito = favorito
 
@@ -615,33 +652,46 @@ def edit_file(doc_id):
             db.session.commit()
             flash(f'Metadata for "{document.titulo_original}" updated successfully!', 'success')
 
-            # --- Log Call ---
+            # Log activity
             log_activity(
                 user_id=user_id, 
                 activity_type='EDIT_DOC_METADATA', 
-                document_id=doc_id, # doc_id is parameter to the route
+                document_id=doc_id,
                 ip_address=request.remote_addr,
                 details=f"Edited metadata for: {document.titulo_original}"
             )
-            # --------------------
-
-            return redirect(url_for('list_files'))
+            
+            # Redirect back to the PARENT folder of the document
+            return redirect(url_for('list_files', folder_id=document.id_carpeta))
 
         except Exception as e:
-            db.session.rollback() # Roll back DB changes on error
+            db.session.rollback() 
             print(f"Error updating document metadata: {e}")
             flash(f'Error updating metadata: {e}', 'danger')
-            # Re-render the edit form with existing data on error
+            # Re-fetch data needed for the form in case of error during POST
             categories = Categoria.query.order_by(Categoria.nombre).all()
-            return render_template('edit_file.html', document=document, categories=categories)
+            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+            # Re-render the edit form with existing data and error message
+            return render_template('edit_file.html', 
+                                   document=document, # Pass the original document back
+                                   categories=categories, 
+                                   folders=user_folders)
 
 
     # --- Handle GET Request (Show Edit Form) ---
     else: # request.method == 'GET'
-        # Fetch categories and potentially folders to populate dropdowns
-        categories = Categoria.query.order_by(Categoria.nombre).all()
-        # folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all() # If needed for dropdown
-        return render_template('edit_file.html', document=document, categories=categories)
+         # Fetch categories and folders needed for the form dropdowns
+         categories = Categoria.query.order_by(Categoria.nombre).all()
+         user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+         
+         # --- CORRECTED RENDER_TEMPLATE CALL ---
+         # Pass the 'document' object fetched at the start of the function
+         return render_template('edit_file.html', 
+                                document=document, 
+                                categories=categories, 
+                                folders=user_folders)
+         # --------------------------------------
+
     
     # --- Folder Creation Route ---
 @app.route('/create_folder', methods=['POST']) # Only accept POST requests
@@ -687,12 +737,12 @@ def create_folder(parent_folder_id=None): # Default parent is None (root)
             log_activity(
                 user_id=user_id, 
                 activity_type='CREATE_FOLDER', 
-                folder_id=new_folder.id_carpeta, # Get ID from new object
-                parent_folder_id_param = parent_folder_id, # Capture the parent context
+                folder_id=new_folder.id_carpeta, # ID of the folder just created
                 ip_address=request.remote_addr,
-                details=f'Created folder: {folder_name}'
+                # Remove parent_folder_id_param, add info to details
+                details=f'Created folder: {folder_name} (in Parent ID: {parent_folder_id})' 
             )
-            # --------------------
+            # --------------------------
             
     except Exception as e:
         db.session.rollback()
