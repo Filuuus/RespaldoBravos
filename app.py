@@ -284,16 +284,70 @@ def upload_route(parent_folder_id):
 @app.route('/files/<int:folder_id>', methods=['GET'])
 @login_required
 def list_files(folder_id):
-    # --- Import models needed specifically for this route ---
+    # --- Import models needed ---
     from models import Documento, Categoria, Carpeta 
-    # --------------------------------------------------------
+    # ----------------------------
     
     user_id = session.get('user_id')
     if not user_id:
         flash('User session error.', 'danger')
         return redirect(url_for('login'))
 
+    sub_folders = []
+    documents_in_folder = []
+    current_folder_name = "My Files (Root)" # Default for root
+    breadcrumbs = [] # Initialize empty list for breadcrumbs
+
     try:
+        # --- Fetch Current Folder and Ancestors (Breadcrumbs) ---
+        current_folder = None
+        if folder_id:
+            # Use a recursive query to get the path from root to current folder
+            sql_query = text("""
+                WITH RECURSIVE folder_path AS (
+                    -- Anchor member: Select the current folder
+                    SELECT id_carpeta, nombre, id_carpeta_padre
+                    FROM carpetas
+                    WHERE id_carpeta = :current_folder_id AND id_usuario = :user_id
+
+                    UNION ALL
+
+                    -- Recursive member: Select the parent of the previous level
+                    SELECT c.id_carpeta, c.nombre, c.id_carpeta_padre
+                    FROM carpetas c
+                    JOIN folder_path fp ON c.id_carpeta = fp.id_carpeta_padre
+                    WHERE c.id_usuario = :user_id -- Ensure all ancestors belong to the user
+                )
+                -- Select the path (ordering handled in Python)
+                SELECT id_carpeta, nombre, id_carpeta_padre FROM folder_path;
+            """)
+            
+            result = db.session.execute(sql_query, {'current_folder_id': folder_id, 'user_id': user_id})
+            
+            # Build the breadcrumb list from the query result
+            path_data = {row.id_carpeta: row for row in result.mappings()} # Fetch all ancestors into a dict
+
+            if folder_id not in path_data: # Check if current folder was found / belongs to user
+                 flash("Folder not found or access denied.", "warning")
+                 return redirect(url_for('list_files', folder_id=None)) # Redirect to root
+
+            # Reconstruct path from root to current
+            curr_id = folder_id
+            while curr_id is not None:
+                folder_info = path_data.get(curr_id)
+                if folder_info:
+                    # Insert at beginning to get Root -> ... -> Current order
+                    breadcrumbs.insert(0, {'id': folder_info['id_carpeta'], 'nombre': folder_info['nombre']}) 
+                    curr_id = folder_info['id_carpeta_padre']
+                else:
+                    # Should not happen if query is correct and IDs are valid, but break defensively
+                    print(f"Warning: Could not find ancestor data for ID {curr_id} in path.")
+                    break 
+            
+            current_folder_name = breadcrumbs[-1]['nombre'] # Get name from last breadcrumb item
+            current_folder = True # Mark as not root (used only to simplify query below)
+
+        # --- Fetch Contents of the Current Folder ---
         # Query for sub-folders within the current folder_id for this user
         sub_folders = Carpeta.query.filter_by(
             id_usuario=user_id, 
@@ -306,33 +360,27 @@ def list_files(folder_id):
             id_carpeta=folder_id # None for root level
         ).order_by(Documento.titulo_original).all()
         
-        # TODO: Add logic later to get parent folder info for breadcrumbs/navigation
-        current_folder_name = "My Files (Root)"
-        if folder_id:
-             current_folder = Carpeta.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first()
-             if current_folder:
-                 current_folder_name = current_folder.nombre
-             else:
-                 flash("Folder not found.", "warning")
-                 return redirect(url_for('list_files', folder_id=None)) # Redirect to root if folder invalid
-
     except Exception as e:
+        db.session.rollback() # Rollback in case the execute caused issues
         print(f"Database query error in list_files: {e}")
         flash('Error retrieving contents from database.', 'danger')
         sub_folders = []
         documents_in_folder = []
+        breadcrumbs = []
         current_folder_name = "Error"
 
-    # Render the template, passing both lists and current folder info
+    # Render the template, passing the lists and breadcrumbs
     return render_template(
         'file_list.html', 
         folders=sub_folders, 
         documents=documents_in_folder,
         current_folder_id=folder_id,
-        current_folder_name=current_folder_name
+        current_folder_name=current_folder_name,
+        breadcrumbs=breadcrumbs # Pass the breadcrumb list
     )
 
 
+# --- File Download Route ---
 @app.route('/download/<int:doc_id>')
 @login_required # Protect the route
 def download_file(doc_id):

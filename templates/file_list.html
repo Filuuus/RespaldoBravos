@@ -15,28 +15,48 @@
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            {# Show current folder name, add Back link if not root #}
-            <h1>
-                {% if current_folder_id %}
-                    {# TODO: Need parent ID to go back correctly #}
-                    <a href="{{ url_for('list_files', folder_id=None) }}" title="Go to Root"><i class="bi bi-arrow-left-circle"></i></a> 
+    {# --- START: Breadcrumb Navigation --- #}
+    <nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '>';"> {# Added style #}
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('list_files', folder_id=None) }}">My Files (Root)</a>
+            </li>
+            {% for crumb in breadcrumbs %}
+                {% if loop.last %}
+                    <li class="breadcrumb-item active" aria-current="page">
+                        {{ crumb.nombre }}
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('list_files', folder_id=crumb.id) }}">{{ crumb.nombre }}</a>
+                    </li>
                 {% endif %}
-                {{ current_folder_name }}
-            </h1>
-            
-            <div class="d-flex">
-                {# Update Create Folder Form action to include parent ID #}
-                <form method="POST" action="{{ url_for('create_folder', parent_folder_id=current_folder_id if current_folder_id else None) }}" class="d-inline-flex me-2">
-                    <input type="text" name="folder_name" class="form-control form-control-sm me-1" placeholder="New folder name" required>
-                    <button type="submit" class="btn btn-sm btn-success">Create Folder</button>
-                </form>
-                <a href="{{ url_for('upload_route', parent_folder_id=current_folder_id if current_folder_id else 0) }}" class="btn btn-sm btn-primary me-2">Upload New File</a>
-                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-secondary">Logout</a>
-            </div>
+            {% endfor %}
+        </ol>
+    </nav>
+    {# --- END: Breadcrumb Navigation --- #}
+
+
+    {# --- START: Header Row with Title and Actions --- #}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        {# Display current folder name #}
+        <h1 class="h3 mb-0">{{ current_folder_name }}</h1> 
+        
+        {# Buttons/Forms Area #}
+        <div class="d-flex align-items-center">
+            {# Create Folder Form #}
+            <form method="POST" action="{{ url_for('create_folder', parent_folder_id=current_folder_id if current_folder_id else None) }}" class="d-inline-flex me-2">
+                <input type="text" name="folder_name" class="form-control form-control-sm me-1" placeholder="New folder name" required style="width: auto;">
+                <button type="submit" class="btn btn-sm btn-success text-nowrap">Create Folder</button> {# Added text-nowrap #}
+            </form>
+            {# Upload Button #}
+            <a href="{{ url_for('upload_route', parent_folder_id=current_folder_id) }}" class="btn btn-sm btn-primary me-2 text-nowrap">Upload File</a> {# Added text-nowrap #}
+            {# Logout Button #}
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-secondary text-nowrap">Logout</a> {# Added text-nowrap #}
         </div>
-        <hr>
+    </div>
+    {# --- END: Header Row --- #}
+    <hr class="mt-0"> {# Moved hr below header row #}
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
