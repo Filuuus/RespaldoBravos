@@ -15,6 +15,7 @@ import math # Needed for formatting file size
 from flask import send_file
 
 from extensions import db 
+from flask_migrate import Migrate
 
 load_dotenv() 
 
@@ -35,6 +36,8 @@ app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 
 # --- 2. Initialize Extensions that NEED config (like DB) ---
 db.init_app(app) 
+
+migrate = Migrate(app,db)
 
 # --- 3. Initialize Boto3 S3 Client (can now safely read app.config) ---
 s3_client = None # Define outside try block
@@ -621,6 +624,140 @@ def create_folder(parent_folder_id=None): # Default parent is None (root)
     # Redirect back to the folder view where the creation happened
     return redirect(url_for('list_files', folder_id=parent_folder_id))
 
+
+# --- Folder Deletion Route ---
+@app.route('/delete_folder/<int:folder_id>', methods=['POST'])
+@login_required
+def delete_folder(folder_id):
+    # --- Import models needed ---
+    from models import Carpeta, Documento
+    # ----------------------------
+
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    try:
+        # 1. Find the folder, ensuring it belongs to the current user
+        folder_to_delete = Carpeta.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first()
+
+        if not folder_to_delete:
+            flash('Folder not found or access denied.', 'danger')
+            return redirect(url_for('list_files')) # Redirect to root or previous location?
+
+        # --- Store parent ID BEFORE deleting for redirection ---
+        parent_folder_id = folder_to_delete.id_carpeta_padre 
+        folder_name = folder_to_delete.nombre # For flash message
+        # -------------------------------------------------------
+
+        # 2. Check if the folder is empty (contains no sub-folders)
+        has_subfolders = Carpeta.query.filter_by(id_carpeta_padre=folder_id, id_usuario=user_id).first()
+
+        # 3. Check if the folder is empty (contains no files)
+        has_files = Documento.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first()
+
+        # 4. Proceed with deletion ONLY if both checks are empty
+        if has_subfolders or has_files:
+            flash(f'Folder "{folder_name}" is not empty. Please delete its contents first.', 'warning')
+            # Redirect back to the view containing the non-empty folder
+            return redirect(url_for('list_files', folder_id=parent_folder_id)) 
+        else:
+            # Folder is empty, proceed with deletion
+            db.session.delete(folder_to_delete)
+            db.session.commit()
+            flash(f'Folder "{folder_name}" deleted successfully.', 'success')
+            
+            # Optional: Log activity
+            # log_activity(user_id, 'DELETE_FOLDER', detalle=f'Deleted empty folder: {folder_name} (ID: {folder_id})')
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting folder: {e}")
+        flash('An error occurred while deleting the folder.', 'danger')
+        # Redirect back to parent folder even on error
+        # Need to fetch parent_folder_id again if error happened before storing it
+        parent_folder_id = None # Default redirect if error is early
+        folder_check = Carpeta.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first()
+        if folder_check:
+             parent_folder_id = folder_check.id_carpeta_padre
+        return redirect(url_for('list_files', folder_id=parent_folder_id))
+
+    # Redirect back to the parent folder's view after deletion attempt
+    return redirect(url_for('list_files', folder_id=parent_folder_id))
+
+
+# --- Folder Rename Route ---
+@app.route('/rename_folder/<int:folder_id>', methods=['GET', 'POST'])
+@login_required
+def rename_folder(folder_id):
+    # --- Import model needed ---
+    from models import Carpeta 
+    # --------------------------
+
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    # Fetch the folder to rename, ensuring ownership
+    folder_to_rename = Carpeta.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first_or_404() 
+    # Using first_or_404() is convenient - automatically returns 404 if not found
+
+    parent_folder_id = folder_to_rename.id_carpeta_padre # Needed for validation and redirect
+
+    if request.method == 'POST':
+        new_name = request.form.get('new_folder_name', '').strip()
+
+        # Basic Validation
+        if not new_name:
+            flash('New folder name cannot be empty.', 'warning')
+            # Re-render the form on validation error
+            return render_template('rename_folder.html', folder=folder_to_rename) 
+        
+        if new_name == folder_to_rename.nombre:
+             flash('New name is the same as the current name.', 'info')
+             return redirect(url_for('list_files', folder_id=parent_folder_id))
+
+        # TODO: Add validation for invalid characters if needed (e.g., '/')
+
+        try:
+            # Check if another folder with the new name already exists in the same parent folder
+            existing_folder = Carpeta.query.filter(
+                Carpeta.id_usuario == user_id,
+                Carpeta.id_carpeta_padre == parent_folder_id,
+                Carpeta.nombre == new_name,
+                Carpeta.id_carpeta != folder_id # Exclude the folder itself from the check
+            ).first()
+
+            if existing_folder:
+                flash(f'A folder named "{new_name}" already exists at this level.', 'warning')
+                # Re-render the form if name conflict
+                return render_template('rename_folder.html', folder=folder_to_rename)
+            else:
+                # Update the folder name
+                folder_to_rename.nombre = new_name
+                # Update modification timestamp if your model has one
+                # folder_to_rename.fecha_modificacion = datetime.utcnow() 
+                db.session.commit()
+                flash(f'Folder renamed to "{new_name}" successfully.', 'success')
+
+                # Optional: Log activity
+                # log_activity(user_id, 'RENAME_FOLDER', carpeta_id=folder_id, detalle=f'Renamed folder to: {new_name}')
+                
+                # Redirect back to the parent folder view
+                return redirect(url_for('list_files', folder_id=parent_folder_id))
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error renaming folder: {e}")
+            flash('An error occurred while renaming the folder.', 'danger')
+            # Re-render form on other errors
+            return render_template('rename_folder.html', folder=folder_to_rename)
+
+    # --- Handle GET Request (Show Rename Form) ---
+    else: # request.method == 'GET'
+        return render_template('rename_folder.html', folder=folder_to_rename)
 
 # --- Error Handlers ---
 @app.errorhandler(413)
