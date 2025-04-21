@@ -909,6 +909,98 @@ def rename_folder(folder_id):
     else: # request.method == 'GET'
         return render_template('rename_folder.html', folder=folder_to_rename)
 
+
+# --- Move File Route ---
+@app.route('/move_file/<int:doc_id>', methods=['GET', 'POST'])
+@login_required
+def move_file(doc_id):
+    # --- Import models needed ---
+    from models import Documento, Carpeta
+    # --------------------------
+
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    # Fetch the document to move, ensuring ownership
+    doc_to_move = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first_or_404()
+
+    if request.method == 'POST':
+        dest_folder_id_str = request.form.get('destination_folder', '') # "" for root
+
+        # Determine target folder ID (None for root)
+        destination_folder_id = None
+        destination_folder = None # To store folder object if not root
+        if dest_folder_id_str.isdigit():
+            destination_folder_id = int(dest_folder_id_str)
+            # Validate destination folder exists and belongs to user
+            destination_folder = Carpeta.query.filter_by(id_carpeta=destination_folder_id, id_usuario=user_id).first()
+            if not destination_folder:
+                 flash("Invalid destination folder selected.", "danger")
+                 # Re-render move form with current data
+                 user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+                 return render_template('move_file.html', document=doc_to_move, folders=user_folders)
+        elif dest_folder_id_str != '':
+             # Submitted value wasn't empty string or digits - invalid selection
+             flash("Invalid destination folder value.", "danger")
+             user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+             return render_template('move_file.html', document=doc_to_move, folders=user_folders)
+
+        # Check if trying to move to the same folder
+        if doc_to_move.id_carpeta == destination_folder_id:
+             flash('File is already in the destination folder.', 'info')
+             return redirect(url_for('list_files', folder_id=destination_folder_id))
+
+        # --- Validation: Check for name conflict in destination ---
+        conflicting_file = Documento.query.filter(
+            Documento.id_usuario == user_id,
+            Documento.id_carpeta == destination_folder_id, # Check destination
+            Documento.titulo_original == doc_to_move.titulo_original,
+            Documento.id_documento != doc_id # Exclude the file itself
+        ).first()
+
+        if conflicting_file:
+            dest_name = destination_folder.nombre if destination_folder else "Root Folder"
+            flash(f'A file named "{doc_to_move.titulo_original}" already exists in "{dest_name}". Cannot move file.', 'danger')
+            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+            return render_template('move_file.html', document=doc_to_move, folders=user_folders)
+        # --- End Name Conflict Check ---
+
+        # Proceed with the move
+        try:
+            original_parent_id = doc_to_move.id_carpeta # For logging/redirect if needed
+            doc_to_move.id_carpeta = destination_folder_id # Update the foreign key
+            db.session.commit()
+            flash(f'File "{doc_to_move.titulo_original}" moved successfully.', 'success')
+
+            # Log activity
+            log_activity(
+                user_id=user_id, 
+                activity_type='MOVE_DOC', 
+                document_id=doc_id,
+                folder_id=original_parent_id, # Log original location?
+                ip_address=request.remote_addr,
+                details=f"Moved '{doc_to_move.titulo_original}' to Folder ID: {destination_folder_id}"
+            )
+            
+            # Redirect to the destination folder
+            return redirect(url_for('list_files', folder_id=destination_folder_id))
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error moving file: {e}")
+            flash('An error occurred while moving the file.', 'danger')
+            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+            return render_template('move_file.html', document=doc_to_move, folders=user_folders)
+
+
+    # --- Handle GET Request (Show Move Form) ---
+    else: # request.method == 'GET'
+        # Fetch all folders for this user to populate the dropdown
+        user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+        return render_template('move_file.html', document=doc_to_move, folders=user_folders)
+
 # --- Error Handlers ---
 @app.errorhandler(413)
 @app.errorhandler(RequestEntityTooLarge)
