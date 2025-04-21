@@ -1,428 +1,478 @@
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-  }
-  
-  body {
-    background-color: #1a1a1a;
-    color: white;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  .header {
-    background-color: #1a1a1a;
-    position: fixed;
-    top: 0;
-    padding: 10px;
-    border-bottom: #c4a14b solid;
-    margin-bottom: 20px;
-    width: 100%;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    z-index: 1000;
-  }
-  
-  /* Menu lateral*/
-  /* From Uiverse.io by JaydipPrajapati1910 */
-  .burger {
-    position: relative;
-    width: 34px;
-    height: 25px;
-    background: transparent;
-    cursor: pointer;
-    display: block;
-  }
-  
-  .burger input {
-    display: none;
-  }
-  
-  .burger span {
-    display: block;
-    position: absolute;
-    height: 3px;
-    width: 100%;
-    background: #c4a14b;
-    border-radius: 9px;
-    opacity: 1;
-    left: 0;
-    transform: rotate(0deg);
-    transition: 0.25s ease-in-out;
-  }
-  
-  .burger span:nth-of-type(1) {
-    top: 0px;
-    transform-origin: left center;
-  }
-  
-  .burger span:nth-of-type(2) {
-    top: 50%;
-    transform: translateY(-50%);
-    transform-origin: left center;
-  }
-  
-  .burger span:nth-of-type(3) {
-    top: 100%;
-    transform-origin: left center;
-    transform: translateY(-50%);
-  }
-  
-  .burger input:checked ~ span:nth-of-type(1) {
-    top: 0;
-    left: 5px;
-    transform: rotate(405deg);
-  }
-  
-  .burger input:checked ~ span:nth-of-type(2) {
-    width: 0%;
-    opacity: 0;
-  }
-  
-  .burger input:checked ~ span:nth-of-type(3) {
-    top: 24px;
-    left: 5px;
-    transform: rotate(-405deg);
-  }
-  
-  /*Barra de búsqueda*/
-  /* From Uiverse.io by satyamchaudharydev */
-  /* From uiverse.io by @satyamchaudharydev */
-  /* removing default style of button */
-  .form button {
-    border: none;
-    background: none;
-    color: #8b8ba7;
-  }
-  /* styling of whole input container */
-  .form {
-    display: flex;
-    --timing: 0.3s;
-    --width-of-input: 300px;
-    --height-of-input: 40px;
-    --border-height: 2px;
-    --input-bg: #2c2c2c;
-    --border-color: #d5b25c;
-    --border-radius: 30px;
-    --after-border-radius: 1px;
-    width: var(--width-of-input);
-    height: var(--height-of-input);
-    padding-inline: 0.8em;
-    border-radius: var(--border-radius);
-    transition: border-radius 0.5s ease;
-    background: var(--input-bg, #fff);
-    margin-right: 10px;
-  }
-  /* styling of Input */
-  .input {
-    font-size: 0.9rem;
-    background-color: transparent;
-    width: 100%;
-    height: 100%;
-    padding-inline: 0.5em;
-    padding-block: 0.7em;
-    border: none;
-    color: #fff;
-  }
-  /* styling of animated border */
-  .form:before {
-    content: "";
-    position: absolute;
-    background: var(--border-color);
-    transform: scaleX(0);
-    transform-origin: center;
-    width: 100%;
-    height: var(--border-height);
-    left: 0;
-    bottom: 0;
-    border-radius: 1px;
-    transition: transform var(--timing) ease;
-  }
-  /* Hover on Input */
-  .form:focus-within {
-    border-radius: var(--after-border-radius);
-    border: 2px solid #888;
-  }
-  
-  input:focus {
-    outline: none;
-  }
-  /* here is code of animated border */
-  .form:focus-within:before {
-    transform: scale(1);
-  }
-  /* styling of close button */
-  /* == you can click the close button to remove text == */
-  .reset {
-    border: none;
-    background: none;
-    opacity: 0;
-    visibility: hidden;
-  }
-  /* close button shown when typing */
-  input:not(:placeholder-shown) ~ .reset {
-    opacity: 1;
-    visibility: visible;
-  }
-  /* sizing svg icons */
-  .form svg {
-    width: 17px;
-    margin-top: 3px;
-  }
-  .buscarUsuario {
-    display: flex;
-    align-items: center;
-  }
-  
-  /* Usuario y menú desplegable */
-  .user-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    margin-left: 10px;
-  }
-  
-  #userIcon {
-    cursor: pointer;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: block;
-    object-fit: cover;
-    background-color: #c4a14b;
-  }
-  
-  .user-dropdown {
-    position: absolute;
-    top: 45px;
-    right: 0;
-    width: 300px;
-    background-color: #2a2a2a;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    display: none;
-    overflow: hidden;
-  }
-  
-  .user-dropdown.active {
-    display: block;
-  }
-  
-  .dropdown-header {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .user-avatar {
-    margin-bottom: 10px;
-  }
-  
-  .user-avatar img {
-    border-radius: 50%;
-  }
-  
-  .user-name {
-    font-size: 1.2rem;
-    color: #c4a14b;
-  }
-  
-  .dropdown-divider {
-    height: 1px;
-    background-color: #c4a14b;
-    margin: 0 20px;
-  }
-  
-  .dropdown-item {
-    display: flex;
-    align-items: center;
-    padding: 15px 20px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    text-decoration: none;
-    color: white;
-  }
-  
-  .dropdown-item:hover {
-    background-color: #3a3a3a;
-  }
-  
-  .item-icon {
-    width: 40px;
-    height: 40px;
-    background-color: #c4a14b;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-right: 15px;
-    color: #2a2a2a;
-  }
-  
-  .item-text {
-    color: white;
-    font-size: 1rem;
-  }
-  
-  /* Contenido principal */
-  .main-content {
-    padding-top: 80px;
-    padding-bottom: 40px;
-    display: flex;
-    justify-content: center;
-    min-height: 100vh;
-  }
-  
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background-color: #1a1a1a;
+  color: white;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.header {
+  background-color: #1a1a1a;
+  position: fixed;
+  top: 0;
+  padding: 10px;
+  border-bottom: #c4a14b solid;
+  margin-bottom: 20px;
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+}
+
+/* Menu lateral*/
+/* From Uiverse.io by JaydipPrajapati1910 */
+.burger {
+  position: relative;
+  width: 34px;
+  height: 25px;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+}
+
+.burger input {
+  display: none;
+}
+
+.burger span {
+  display: block;
+  position: absolute;
+  height: 3px;
+  width: 100%;
+  background: #c4a14b;
+  border-radius: 9px;
+  opacity: 1;
+  left: 0;
+  transform: rotate(0deg);
+  transition: 0.25s ease-in-out;
+}
+
+.burger span:nth-of-type(1) {
+  top: 0px;
+  transform-origin: left center;
+}
+
+.burger span:nth-of-type(2) {
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: left center;
+}
+
+.burger span:nth-of-type(3) {
+  top: 100%;
+  transform-origin: left center;
+  transform: translateY(-50%);
+}
+
+.burger input:checked ~ span:nth-of-type(1) {
+  top: 0;
+  left: 5px;
+  transform: rotate(405deg);
+}
+
+.burger input:checked ~ span:nth-of-type(2) {
+  width: 0%;
+  opacity: 0;
+}
+
+.burger input:checked ~ span:nth-of-type(3) {
+  top: 24px;
+  left: 5px;
+  transform: rotate(-405deg);
+}
+
+/*Barra de búsqueda*/
+/* From Uiverse.io by satyamchaudharydev */
+/* From uiverse.io by @satyamchaudharydev */
+/* removing default style of button */
+.form button {
+  border: none;
+  background: none;
+  color: #8b8ba7;
+}
+/* styling of whole input container */
+.form {
+  display: flex;
+  --timing: 0.3s;
+  --width-of-input: 300px;
+  --height-of-input: 40px;
+  --border-height: 2px;
+  --input-bg: #2c2c2c;
+  --border-color: #d5b25c;
+  --border-radius: 30px;
+  --after-border-radius: 1px;
+  width: var(--width-of-input);
+  height: var(--height-of-input);
+  padding-inline: 0.8em;
+  border-radius: var(--border-radius);
+  transition: border-radius 0.5s ease;
+  background: var(--input-bg, #fff);
+  margin-right: 10px;
+}
+/* styling of Input */
+.input {
+  font-size: 0.9rem;
+  background-color: transparent;
+  width: 100%;
+  height: 100%;
+  padding-inline: 0.5em;
+  padding-block: 0.7em;
+  border: none;
+  color: #fff;
+}
+/* styling of animated border */
+.form:before {
+  content: "";
+  position: absolute;
+  background: var(--border-color);
+  transform: scaleX(0);
+  transform-origin: center;
+  width: 100%;
+  height: var(--border-height);
+  left: 0;
+  bottom: 0;
+  border-radius: 1px;
+  transition: transform var(--timing) ease;
+}
+/* Hover on Input */
+.form:focus-within {
+  border-radius: var(--after-border-radius);
+  border: 2px solid #888;
+}
+
+input:focus {
+  outline: none;
+}
+/* here is code of animated border */
+.form:focus-within:before {
+  transform: scale(1);
+}
+/* styling of close button */
+/* == you can click the close button to remove text == */
+.reset {
+  border: none;
+  background: none;
+  opacity: 0;
+  visibility: hidden;
+}
+/* close button shown when typing */
+input:not(:placeholder-shown) ~ .reset {
+  opacity: 1;
+  visibility: visible;
+}
+/* sizing svg icons */
+.form svg {
+  width: 17px;
+  margin-top: 3px;
+}
+.buscarUsuario {
+  display: flex;
+  align-items: center;
+}
+
+/* Usuario y menú desplegable */
+.user-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+}
+
+#userIcon {
+  cursor: pointer;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: block;
+  object-fit: cover;
+  background-color: #c4a14b;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  width: 300px;
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: none;
+  overflow: hidden;
+}
+
+.user-dropdown.active {
+  display: block;
+}
+
+.dropdown-header {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-avatar {
+  margin-bottom: 10px;
+}
+
+.user-avatar img {
+  border-radius: 50%;
+}
+
+.user-name {
+  font-size: 1.2rem;
+  color: #c4a14b;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #c4a14b;
+  margin: 0 20px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+  color: white;
+}
+
+.dropdown-item:hover {
+  background-color: #3a3a3a;
+}
+
+.item-icon {
+  width: 40px;
+  height: 40px;
+  background-color: #c4a14b;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 15px;
+  color: #2a2a2a;
+}
+
+.item-text {
+  color: white;
+  font-size: 1rem;
+}
+
+/* Contenido principal */
+.main-content {
+  padding-top: 80px;
+  padding-bottom: 40px;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.update-container {
+  width: 90%;
+  max-width: 900px;
+  background-color: #222;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.update-title {
+  color: #c4a14b;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 28px;
+  border-bottom: 1px solid #c4a14b;
+  padding-bottom: 15px;
+}
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sección de foto de perfil */
+.photo-upload-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.profile-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 15px;
+  border: 3px solid #c4a14b;
+}
+
+.profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-upload-controls {
+  display: flex;
+  justify-content: center;
+}
+
+.upload-btn {
+  background-color: #c4a14b;
+  color: #1a1a1a;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.upload-btn:hover {
+  background-color: #d5b25c;
+}
+
+.update-form {
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #c4a14b;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  background-color: #2c2c2c;
+  border: 1px solid #444;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #c4a14b;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.password-toggle-container {
+  margin: 25px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.toggle-password-btn {
+  background-color: #c4a14b;
+  color: #1a1a1a;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.toggle-password-btn:hover {
+  background-color: #d5b25c;
+}
+
+.password-section {
+  margin-top: 20px;
+  border-top: 1px solid #444;
+  padding-top: 20px;
+}
+
+.hidden {
+  display: none;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+.save-btn,
+.cancel-btn {
+  padding: 12px 25px;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.save-btn {
+  background-color: #c4a14b;
+  color: #1a1a1a;
+  border: none;
+  font-weight: bold;
+}
+
+.save-btn:hover {
+  background-color: #d5b25c;
+}
+
+.cancel-btn {
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid #c4a14b;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-btn:hover {
+  background-color: #333;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
   .update-container {
-    width: 90%;
-    max-width: 900px;
-    background-color: #222;
-    border-radius: 10px;
-    padding: 30px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 95%;
+    padding: 20px;
   }
-  
-  .update-title {
-    color: #c4a14b;
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 28px;
-    border-bottom: 1px solid #c4a14b;
-    padding-bottom: 15px;
-  }
-  
-  .profile-section {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .profile-image {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 30px;
-  }
-  
-  .profile-pic {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #c4a14b;
-    margin-bottom: 15px;
-  }
-  
-  .change-photo-btn {
-    background-color: #2a2a2a;
-    color: #fff;
-    border: 1px solid #c4a14b;
-    padding: 8px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .change-photo-btn:hover {
-    background-color: #c4a14b;
-    color: #2a2a2a;
-  }
-  
-  .update-form {
-    width: 100%;
-  }
-  
-  .form-group {
-    margin-bottom: 20px;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #c4a14b;
-    font-weight: bold;
-  }
-  
-  .form-group input {
-    width: 100%;
-    padding: 12px;
-    background-color: #2c2c2c;
-    border: 1px solid #444;
-    border-radius: 5px;
-    color: #fff;
-    font-size: 16px;
-    transition: border-color 0.3s;
-  }
-  
-  .form-group input:focus {
-    outline: none;
-    border-color: #c4a14b;
-  }
-  
+
   .form-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
+    flex-direction: column;
+    gap: 15px;
   }
-  
+
   .save-btn,
   .cancel-btn {
-    padding: 12px 25px;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
+    width: 100%;
   }
-  
-  .save-btn {
-    background-color: #c4a14b;
-    color: #1a1a1a;
-    border: none;
-    font-weight: bold;
-  }
-  
-  .save-btn:hover {
-    background-color: #d5b25c;
-  }
-  
-  .cancel-btn {
-    background-color: transparent;
-    color: #fff;
-    border: 1px solid #c4a14b;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .cancel-btn:hover {
-    background-color: #333;
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    .update-container {
-      width: 95%;
-      padding: 20px;
-    }
-  
-    .form-actions {
-      flex-direction: column;
-      gap: 15px;
-    }
-  
-    .save-btn,
-    .cancel-btn {
-      width: 100%;
-    }
-  }
-  
+}

@@ -81,11 +81,16 @@
             <h1 class="update-title">Actualizar Datos Personales</h1>
             
             <div class="profile-section">
-                <div class="profile-image">
-                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEBUlEQVR4nO2ZW4hVVRjHf3PmzHgZ8zJeJi+ZF7xAXtLMCEYxghIqpQcfpIcuYvYgWBYVPUWUDypIP1QvUg8JBSYpFCVUVKiVYV4qzcoaL2COl3G8jc7MN7GGfSzPnL332Wefs/eE84fFOey9vrW+/1nfWt9a37eg/+Mw4DZgGXAvsAiYAUwGRgNDgUrgb+AX4CxwDDgIHABOAJ2ZGp8FjAXWAruBdqAn5tcO7ALWACXpGj8QWA58BnSlYbTf1wWUAQ8lMn4I8BzwWwrG+n1ngOXAgFQMHwO8D3RkwXC/rwN4FxgVxfhbgC+z/NbDfMeAW8OMHwSUZ9Fov+8rYGCQ8XcCv+fQeL/vd2BBkPGbcmx8j/e1AZv8xo8FmnNsfI/3NQHj/AaXFoDxPd5X7je4vkCM7/G+On/nZQVkfA/wsd/gugIyvht4w9/5SoEY3w2s8Hd+XSAA3QKs9Hd+WQAAPcAL/s5/MxzQDTzr7zzLAIAu4El/5/kGALQDj/o7P2wAQCMwx995rgEAZ4Dp/s5zDQA4Cdzh7zzXAIB9wGR/57kGAGwHRvg7zzUA4ANgkL/zXAMAXgf6+TvPNQDgRaBfUOe5BLAaGBDUea4ArAKGBHWeKwDLgWFBnecCwGJgRFDnuQAwD7g+qPNsA5gNTArqPNsApgJTgjrPJoBJwIygzrMJYDIwM6jzbAEYD8wO6jxbAMYA9wR1ni0Ao4B7gzrPFoDhwANBnWcLwBDgoaDOswVgELA4qPNsARgAPBzUebYA9AceCeo8WwD6AUuCOs8WgL7AY0GdZwtAKfB4UOfZAlACPBHUebYAlABPBXWeLQAlwDNBnWcLQAnwXFDn2QJQArwY1Hm2AJQArwR1ni0AJcCbQZ1nC0AJ8E5Q59kCUAK8F9R5tgCUAB8GdZ4tACXAx0GdZwtAP+CToM6zBWAg8FlQ59kCMAT4IqjzbAEYAXwZ1Hm2AIwBdgR1ni0AE4FdQZ1nC8BM4OugzrMFYB6wN6jzbAG4H/g+qPNsAVgEHAnqPFsAlgDHgzrPFoBlwKmgzrMF4FngXFDn2QKwCrgQ1Hm2ALwEXAzqPFsA1gCXgjrPFoC1QFtQ59kCsA5oD+o8WwA2AJeDOs8WgE1AZ1Dn2QKwGegK6jxbALYC3UGdZwvAduBKUOfZArAT+Deo82wB2ANcDeo8WwD2A/8FdZ4tAAeB1qDOswXgMHApqPNsATgKNAd1ni0Ax4ALQZ1nC8AJoCmo82wBOA2cC+o8WwDOAKeDOs8WgHPAyaDOswXgPHA8qPNsAbgIHA3qPFsA2oBDQZ1nC0AHsD+o82wB6AR+9Hee7/gfxUd3k/0fv+QAAAAASUVORK5CYII=" alt="Foto de perfil" class="profile-pic">
-                    <button class="change-photo-btn">Cambiar Foto</button>
+                <div class="photo-upload-section">
+                    <div class="profile-photo">
+                        <img id="profileImage" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEBUlEQVR4nO2ZW4hVVRjHf3PmzHgZ8zJeJi+ZF7xAXtLMCEYxghIqpQcfpIcuYvYgWBYVPUWUDypIP1QvUg8JBSYpFCVUVKiVYV4qzcoaL2COl3G8jc7MN7GGfSzPnL332Wefs/eE84fFOey9vrW+/1nfWt9a37eg/+Mw4DZgGXAvsAiYAUwGRgNDgUrgb+AX4CxwDDgIHABOAJ2ZGp8FjAXWAruBdqAn5tcO7ALWACXpGj8QWA58BnSlYbTf1wWUAQ8lMn4I8BzwWwrG+n1ngOXAgFQMHwO8D3RkwXC/rwN4FxgVxfhbgC+z/NbDfMeAW8OMHwSUZ9Fov+8rYGCQ8XcCv+fQeL/vd2BBkPGbcmx8j/e1AZv8xo8FmnNsfI/3NQHj/AaXFoDxPd5X7je4vkCM7/G+On/nZQVkfA/wsd/gugIyvht4w9/5SoEY3w2s8Hd+XSAA3QKs9Hd+WQAAPcAL/s5/MxzQDTzr7zzLAIAu4El/5/kGALQDj/o7P2wAQCMwx995rgEAZ4Dp/s5zDQA4Cdzh7zzXAIB9wGR/57kGAGwHRvg7zzUA4ANgkL/zXAMAXgf6+TvPNQDgRaBfUOe5BLAaGBDUea4ArAKGBHWeKwDLgWFBnecCwGJgRFDnuQAwD7g+qPNsA5gNTArqPNsApgJTgjrPJoBJwIygzrMJYDIwM6jzbAEYD8wO6jxbAMYA9wR1ni0Ao4B7gzrPFoDhwANBnWcLwBDgoaDOswVgELA4qPNsARgAPBzUebYA9AceCeo8WwD6AUuCOs8WgL7AY0GdZwtAKfB4UOfZAlACPBHUebYAlABPBXWeLQAlwDNBnWcLQAnwXFDn2QJQArwY1Hm2AJQArwR1ni0AJcCbQZ1nC0AJ8E5Q59kCUAK8F9R5tgCUAB8GdZ4tACXAx0GdZwtAP+CToM6zBWAg8FlQ59kCMAT4IqjzbAEYAXwZ1Hm2AIwBdgR1ni0AE4FdQZ1nC8BM4OugzrMFYB6wN6jzbAG4H/g+qPNsAVgEHAnqPFsAlgDHgzrPFoBlwKmgzrMF4FngXFDn2QKwCrgQ1Hm2ALwEXAzqPFsA1gCXgjrPFoC1QFtQ59kCsA5oD+o8WwA2AJeDOs8WgE1AZ1Dn2QKwGegK6jxbALYC3UGdZwvAduBKUOfZArAT+Deo82wB2ANcDeo8WwD2A/8FdZ4tAAeB1qDOswXgMHApqPNsATgKNAd1ni0Ax4ALQZ1nC8AJoCmo82wBOA2cC+o8WwDOAKeDOs8WgHPAyaDOswXgPHA8qPNsAbgIHA3qPFsA2oBDQZ1nC0AHsD+o82wB6AR+9Hee7/gfxUd3k/0fv+QAAAAASUVORK5CYII=" alt="Foto de perfil">
+                    </div>
+                    <div class="photo-upload-controls">
+                        <label for="photoUpload" class="upload-btn">Cambiar Foto</label>
+                        <input type="file" id="photoUpload" accept="image/*" style="display: none;">
+                    </div>
                 </div>
-                
+
                 <form class="update-form">
                     <div class="form-group">
                         <label for="nombre">Nombre</label>
@@ -98,33 +103,56 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="email">Correo Electrónico</label>
-                        <input type="email" id="email" name="email" placeholder="tu@email.com" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="telefono">Teléfono</label>
-                        <input type="tel" id="telefono" name="telefono" placeholder="Tu número de teléfono">
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="institucion">Institución</label>
                         <input type="text" id="institucion" name="institucion" placeholder="Tu institución">
                     </div>
                     
                     <div class="form-group">
-                        <label for="password">Contraseña Actual</label>
-                        <input type="password" id="password" name="password" placeholder="Contraseña actual" required>
+                        <label for="grado-estudios">Grado de Estudios</label>
+                        <select id="grado-estudios" name="grado-estudios" required>
+                            <option value="" disabled selected>Selecciona tu grado de estudios</option>
+                            <option value="bachillerato">Bachillerato</option>
+                            <option value="licenciatura">Licenciatura</option>
+                            <option value="maestria">Maestría</option>
+                            <option value="doctorado">Doctorado</option>
+                            <option value="otro">Otro</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
-                        <label for="new-password">Nueva Contraseña</label>
-                        <input type="password" id="new-password" name="new-password" placeholder="Nueva contraseña">
+                        <label for="perfil-profesional">Perfil Profesional</label>
+                        <textarea id="perfil-profesional" name="perfil-profesional" placeholder="Describe brevemente tu perfil profesional" rows="4"></textarea>
                     </div>
                     
                     <div class="form-group">
-                        <label for="confirm-password">Confirmar Nueva Contraseña</label>
-                        <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirmar nueva contraseña">
+                        <label for="experiencia">Experiencia Laboral</label>
+                        <textarea id="experiencia" name="experiencia" placeholder="Describe tu experiencia laboral" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="habilidades">Habilidades</label>
+                        <textarea id="habilidades" name="habilidades" placeholder="Lista tus habilidades profesionales" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="password-toggle-container">
+                        <button type="button" id="togglePassword" class="toggle-password-btn">Cambiar Contraseña</button>
+                    </div>
+                    
+                    <div id="password-section" class="password-section hidden">
+                        <div class="form-group">
+                            <label for="password">Contraseña Actual</label>
+                            <input type="password" id="password" name="password" placeholder="Contraseña actual">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="new-password">Nueva Contraseña</label>
+                            <input type="password" id="new-password" name="new-password" placeholder="Nueva contraseña">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm-password">Confirmar Nueva Contraseña</label>
+                            <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirmar nueva contraseña">
+                        </div>
                     </div>
                     
                     <div class="form-actions">
@@ -136,7 +164,8 @@
         </div>
     </main>
 
-    <script src="inicio.js"></script>
-    <script src="actualizar.js"></script>
+    <!-- Asegúrate de que los scripts se carguen correctamente -->
+    <script src="js/inicio.js"></script>
+    <script src="js/actualizar.js"></script>
 </body>
 </html>
