@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Move Folder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Move Folder: {{ folder_to_move.nombre }}</h1> 
+        <p>Current Parent: {{ folder_to_move.parent.nombre if folder_to_move.parent else "Root Folder" }}</p>
+        <hr>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category or 'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {# Form posts back to the same URL #}
+        <form method="post" action="{{ url_for('move_folder', folder_id=folder_to_move.id_carpeta) }}"> 
+             <div class="mb-3">
+                <label for="destination_folder" class="form-label">New Parent Folder:</label>
+                <select name="destination_folder" id="destination_folder" class="form-select">
+                    <option value="">-- Root Folder --</option> {# Empty value for root #}
+                    {# Loop through potential destinations #}
+                    {% for folder in destination_folders %}
+                        {# Prevent selecting self or current parent #}
+                        {% if folder_to_move.id_carpeta != folder.id_carpeta and folder_to_move.id_carpeta_padre != folder.id_carpeta %}
+                            <option value="{{ folder.id_carpeta }}">
+                                {{ folder.nombre }} {# Display folder name #}
+                                {# Add hierarchy later if needed #}
+                            </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <div class="form-text">You cannot move a folder into itself or into its current location. Further checks prevent moving into sub-folders.</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Move Folder</button>
+            {# Link back to the folder's CURRENT parent folder #}
+            <a href="{{ url_for('list_files', folder_id=folder_to_move.id_carpeta_padre if folder_to_move.id_carpeta_padre is not none else None) }}" class="btn btn-secondary">Cancel</a> 
+        </form>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
