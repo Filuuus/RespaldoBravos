@@ -20,6 +20,11 @@ from models import ActividadUsuario
 from flask import request
 from sqlalchemy import asc, desc, text, or_
 
+from zeep import Client, Settings, Transport # Import Zeep classes
+from zeep.exceptions import Fault # Import specific Zeep exception
+from models import Usuario # Import User model where needed
+from datetime import datetime, timezone # Add timezone here
+
 load_dotenv() 
 
 # Initialize Flask app
@@ -36,6 +41,9 @@ app.config['S3_REGION'] = os.environ.get('S3_REGION')
 MAX_MB = int(os.environ.get('MAX_CONTENT_LENGTH_MB', 50)) 
 app.config['MAX_CONTENT_LENGTH'] = MAX_MB * 1024 * 1024 
 app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+
+app.config['SIIAU_WSDL_URL'] = os.environ.get('SIIAU_WSDL_URL')
+app.config['SIIAU_VALIDA_KEY'] = os.environ.get('SIIAU_VALIDA_KEY')
 
 # --- 2. Initialize Extensions that NEED config (like DB) ---
 db.init_app(app) 
@@ -64,6 +72,26 @@ except Exception as e:
     print(f"Error initializing Boto3 S3 Client: {e}")
     s3_client = None 
 # ---------------------------------------------------------------------
+
+
+# --- Initialize Zeep SOAP Client ---
+siiau_client = None
+try:
+    if app.config['SIIAU_WSDL_URL']:
+        # strict=False can help with compatibility with some SOAP services
+        settings = Settings(strict=False, xml_huge_tree=True) 
+        # transport = Transport(timeout=10) # Optional: set timeout
+        siiau_client = Client(app.config['SIIAU_WSDL_URL'], settings=settings) #, transport=transport)
+        print("Zeep SIIAU Client Initialized Successfully.")
+        # Optional: Check if service/methods expected are available
+        # print(siiau_client.service)
+    else:
+        print("SIIAU WSDL URL missing, Zeep client not initialized.")
+except Exception as e:
+    print(f"Error initializing Zeep SIIAU Client: {e}")
+    siiau_client = None
+# ---------------------------------
+
 
 
 # --- Jinja Custom Filter for File Size ---
@@ -113,23 +141,148 @@ def login_required(f):
     return decorated_function
 
 # --- Dummy Login/Logout Routes (Placeholders) ---
-@app.route('/login') 
-def login():
-    user_id_to_log = 1 # Use the dummy ID
-    session['user_id'] = user_id_to_log 
-    flash('You were logged in (dummy login).', 'success')
-    # Log after setting session
-    log_activity(user_id=user_id_to_log, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr) 
-    return redirect(request.args.get('next') or url_for('hello_world'))
+# @app.route('/login') 
+# def login():
+#     user_id_to_log = 1 # Use the dummy ID
+#     session['user_id'] = user_id_to_log 
+#     flash('You were logged in (dummy login).', 'success')
+#     # Log after setting session
+#     log_activity(user_id=user_id_to_log, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr) 
+#     return redirect(request.args.get('next') or url_for('hello_world'))
 
+
+# --- Real Login Route ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # If user is already logged in, redirect them away from login page
+    if 'user_id' in session:
+        return redirect(url_for('list_files')) 
+
+    if request.method == 'POST':
+        codigo = request.form.get('codigo')
+        nip = request.form.get('nip')
+        next_url = request.form.get('next') # Get redirect URL if provided
+
+        if not codigo or not nip:
+            flash('Please enter both Código and NIP.', 'warning')
+            return render_template('login.html')
+
+        # Check if Zeep client is available
+        if not siiau_client:
+             flash('Authentication service is currently unavailable.', 'danger')
+             return render_template('login.html')
+        
+        # Call the SIIAU valida service
+        try:
+            print(f"Calling SIIAU valida for user: {codigo}") # Log attempt
+            key = app.config.get('SIIAU_VALIDA_KEY')
+            if not key:
+                 raise ValueError("SIIAU Valida Key not configured in application.")
+
+            # Call the service using parameter names from WSDL/example
+            response = siiau_client.service.valida(usuario=codigo, password=nip, key=key) 
+            print(f"SIIAU Response: {response}") # Log raw response
+
+            # Process the response
+            if response == "0" or not response: # Check for '0' or empty/None response
+                 flash('Invalid CODE or NIP.', 'danger')
+                #  log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo}")
+                 return render_template('login.html')
+            else:
+                 # Successful authentication - Parse the response string
+                 # Expected: "T/E/A,Nombre Completo,Campus,SiglasCarrera/Campus"
+                 try:
+                     parts = response.split(',', 4) # Split only 3 times to keep name intact
+                     if len(parts) < 5: 
+                          raise ValueError("Unexpected response format from auth service.")
+                     
+                     tipo = parts[0].strip()
+                     codigo = parts[1].strip()
+                     nombre = parts[2].strip()
+                     plantel = parts[3].strip()
+                     seccion = parts[4].strip() 
+
+                     # Find or Create user in local database
+                     user = Usuario.query.filter_by(codigo_usuario=codigo).first()
+
+                     if user:
+                         # User exists, update details and last login
+                         print(f"Found existing user: {user.id_usuario}")
+                         user.nombre_completo = nombre
+                         user.tipo_usuario = tipo
+                         user.plantel = plantel
+                         user.seccion = seccion
+                         user.ultimo_login = datetime.now(timezone.utc) # Or db.func.now()
+                         user.is_active = True # Ensure user is active on successful login
+                     else:
+                         # User doesn't exist, create new record
+                         print(f"Creating new user for codigo: {codigo}")
+                         user = Usuario(
+                             codigo_usuario=codigo,
+                             nombre_completo=nombre,
+                             tipo_usuario=tipo,
+                             plantel=plantel,
+                             seccion=seccion,
+                             ultimo_login=datetime.utcnow() # Or db.func.now()
+                             # fecha_registro has default, is_active has default
+                         )
+                         db.session.add(user)
+                     
+                     db.session.commit() # Commit update or new user
+
+                     # Store LOCAL user ID in session
+                     session['user_id'] = user.id_usuario 
+                     session.permanent = True # Make session last longer (configure duration via app.permanent_session_lifetime)
+                     
+                     flash(f'Welcome back, {user.nombre_completo}!', 'success')
+                     log_activity(user_id=user.id_usuario, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr)
+                     
+                     # Redirect to the originally requested page or default file list
+                     return redirect(next_url or url_for('list_files'))
+
+                 except Exception as e:
+                      db.session.rollback() # Rollback DB changes if parsing/saving failed
+                      print(f"Error processing successful SIIAU response or saving user: {e}")
+                      flash('Login succeeded but failed to process user data.', 'danger')
+                      return render_template('login.html')
+
+        # Handle exceptions during the SOAP call (e.g., connection errors, timeouts, SOAP Faults)
+        except Fault as fault: # Specific Zeep exception for SOAP faults
+             print(f"SIIAU SOAP Fault: {fault}")
+             flash(f'Authentication service error: {fault.message}', 'danger')
+             log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo} - SOAP Fault: {fault.message}")
+             return render_template('login.html')
+        except Exception as e: # Catch other potential errors (network, etc.)
+             print(f"SIIAU Call Error: {e}")
+             flash(f'Error communicating with authentication service: {e}', 'danger')
+             log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo} - Connection/Other Error")
+             return render_template('login.html')
+
+    # --- Handle GET Request (Show Login Form) ---
+    else: # request.method == 'GET'
+        # Pass current year to template for optional footer display
+        current_year = datetime.now(timezone.utc).year 
+        return render_template('login.html', now={'year': current_year})
+
+# --- Update Logout ---
 @app.route('/logout')
+@login_required # Add decorator to ensure user is logged in before logging out
 def logout():
-    user_id_to_log = session.get('user_id') # Get ID *before* popping
+    user_id_to_log = session.get('user_id') 
     session.pop('user_id', None) 
-    flash('You were logged out.', 'info')
-    if user_id_to_log: # Only log if a user was actually logged in
+    flash('You have been successfully logged out.', 'info')
+    if user_id_to_log: 
          log_activity(user_id=user_id_to_log, activity_type='LOGOUT', ip_address=request.remote_addr)
-    return redirect(url_for('login'))
+    return redirect(url_for('login')) 
+
+# @app.route('/logout')
+# def logout():
+#     user_id_to_log = session.get('user_id') # Get ID *before* popping
+#     session.pop('user_id', None) 
+#     flash('You were logged out.', 'info')
+#     if user_id_to_log: # Only log if a user was actually logged in
+#          log_activity(user_id=user_id_to_log, activity_type='LOGOUT', ip_address=request.remote_addr)
+#     return redirect(url_for('login'))
 
 # --- File Upload Route ---
 # Modify route definition to accept optional parent folder ID
