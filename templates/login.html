@@ -33,18 +33,18 @@
 
             <div class="form-floating">
                 <input type="text" class="form-control" id="codigo" name="codigo" placeholder="123456789" required autofocus>
-                <label for="codigo">Código SIIAU</label>
+                <label for="codigo">SIIAU CODE</label>
             </div>
             <div class="form-floating">
                 <input type="password" class="form-control" id="nip" name="nip" placeholder="Password" required>
-                <label for="nip">NIP SIIAU</label>
+                <label for="nip">SIIAU NIP</label>
             </div>
 
             {# Add hidden input for 'next' URL if implementing redirection after login #}
             <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
 
             <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
-            <p class="mt-5 mb-3 text-muted">&copy; Your Team Name {{ now.year if now else '' }}</p> {# Optional year #}
+            <p class="mt-5 mb-3 text-muted">&copy; Bravos {{ now.year if now else '' }}</p> {# Optional year #}
         </form>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

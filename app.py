@@ -23,6 +23,7 @@ from sqlalchemy import asc, desc, text, or_
 from zeep import Client, Settings, Transport # Import Zeep classes
 from zeep.exceptions import Fault # Import specific Zeep exception
 from models import Usuario # Import User model where needed
+from datetime import datetime, timezone # Add timezone here
 
 load_dotenv() 
 
@@ -184,15 +185,15 @@ def login():
 
             # Process the response
             if response == "0" or not response: # Check for '0' or empty/None response
-                 flash('Invalid Código or NIP.', 'danger')
-                 log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo}")
+                 flash('Invalid CODE or NIP.', 'danger')
+                #  log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo}")
                  return render_template('login.html')
             else:
                  # Successful authentication - Parse the response string
                  # Expected: "T/E/A,Nombre Completo,Campus,SiglasCarrera/Campus"
                  try:
                      parts = response.split(',', 4) # Split only 3 times to keep name intact
-                     if len(parts) < 4: 
+                     if len(parts) < 5: 
                           raise ValueError("Unexpected response format from auth service.")
                      
                      tipo = parts[0].strip()
@@ -211,7 +212,7 @@ def login():
                          user.tipo_usuario = tipo
                          user.plantel = plantel
                          user.seccion = seccion
-                         user.ultimo_login = datetime.utcnow() # Or db.func.now()
+                         user.ultimo_login = datetime.now(timezone.utc) # Or db.func.now()
                          user.is_active = True # Ensure user is active on successful login
                      else:
                          # User doesn't exist, create new record
@@ -260,7 +261,7 @@ def login():
     # --- Handle GET Request (Show Login Form) ---
     else: # request.method == 'GET'
         # Pass current year to template for optional footer display
-        current_year = datetime.utcnow().year 
+        current_year = datetime.now(timezone.utc).year 
         return render_template('login.html', now={'year': current_year})
 
 # --- Update Logout ---
