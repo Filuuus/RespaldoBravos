@@ -946,7 +946,7 @@ def rename_folder(folder_id):
     # --- Handle GET Request (Show Rename Form) ---
     else: # request.method == 'GET'
         return render_template('rename_folder.html', folder=folder_to_rename)
-
+# ----------------------------------------------------------------------------
 
 # --- Move File Route ---
 @app.route('/move_file/<int:doc_id>', methods=['GET', 'POST'])
@@ -1032,12 +1032,145 @@ def move_file(doc_id):
             user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
             return render_template('move_file.html', document=doc_to_move, folders=user_folders)
 
-
     # --- Handle GET Request (Show Move Form) ---
     else: # request.method == 'GET'
         # Fetch all folders for this user to populate the dropdown
         user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
         return render_template('move_file.html', document=doc_to_move, folders=user_folders)
+    # ----------------------------------------------------------------------------
+
+
+# --- Move Folder Route ---
+@app.route('/move_folder/<int:folder_id>', methods=['GET', 'POST'])
+@login_required
+def move_folder(folder_id):
+    # --- Import models needed ---
+    from models import Carpeta, Documento # Need Documento for name conflict check
+    from sqlalchemy import text # For recursive query
+    # --------------------------
+
+    user_id = session.get('user_id')
+    if not user_id: # Defensive check
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    # Fetch the folder to move, ensuring ownership
+    folder_to_move = Carpeta.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first_or_404()
+    original_parent_id = folder_to_move.id_carpeta_padre # Store for redirects/logging
+
+    if request.method == 'POST':
+        dest_folder_id_str = request.form.get('destination_folder', '') # "" for root
+
+        # 1. Determine Target Folder ID (None for root)
+        destination_folder_id = None
+        if dest_folder_id_str.isdigit():
+            destination_folder_id = int(dest_folder_id_str)
+        elif dest_folder_id_str != '':
+             flash("Invalid destination folder value.", "danger")
+             # Re-render needed info for GET part
+             user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+             return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+        # 2. === Validation Checks ===
+
+        # 2a. Cannot move to the same folder (Technically redundant with 2c check)
+        if folder_to_move.id_carpeta_padre == destination_folder_id:
+            flash('Folder is already in that location.', 'info')
+            return redirect(url_for('list_files', folder_id=original_parent_id))
+
+        # 2b. Cannot move folder into itself
+        if destination_folder_id == folder_id:
+             flash("Cannot move a folder into itself.", "danger")
+             user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+             return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+        # 2c. Cycle Check: Cannot move folder into one of its own descendants
+        #     We need to get all descendant folder IDs of the folder being moved
+        if destination_folder_id is not None: # No need to check if moving to root
+            descendant_ids = set()
+            # Use a recursive query to find all children, grandchildren, etc.
+            sql_descendants = text("""
+                WITH RECURSIVE subfolders AS (
+                    SELECT id_carpeta FROM carpetas WHERE id_carpeta = :start_folder_id AND id_usuario = :user_id
+                    UNION ALL
+                    SELECT c.id_carpeta FROM carpetas c JOIN subfolders s ON c.id_carpeta_padre = s.id_carpeta
+                    WHERE c.id_usuario = :user_id
+                )
+                SELECT id_carpeta FROM subfolders WHERE id_carpeta != :start_folder_id; 
+            """) # Exclude the start folder itself
+            
+            result = db.session.execute(sql_descendants, {'start_folder_id': folder_id, 'user_id': user_id})
+            descendant_ids = {row.id_carpeta for row in result}
+            
+            if destination_folder_id in descendant_ids:
+                 flash("Cannot move a folder into one of its own sub-folders.", "danger")
+                 user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+                 return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+        # 2d. Name Conflict Check: Check if folder/file with same name exists in destination
+        destination_folder_obj = None # Store destination folder object if applicable
+        if destination_folder_id is not None:
+            destination_folder_obj = Carpeta.query.filter_by(id_carpeta=destination_folder_id, id_usuario=user_id).first()
+            if not destination_folder_obj:
+                 flash("Destination folder not found or access denied.", "danger")
+                 user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+                 return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+        conflicting_folder = Carpeta.query.filter(
+            Carpeta.id_usuario == user_id,
+            Carpeta.id_carpeta_padre == destination_folder_id,
+            Carpeta.nombre == folder_to_move.nombre,
+            Carpeta.id_carpeta != folder_id # Exclude self
+        ).first()
+
+        # Also check for conflicting *file* names in destination
+        conflicting_file = Documento.query.filter(
+            Documento.id_usuario == user_id,
+            Documento.id_carpeta == destination_folder_id,
+            Documento.titulo_original == folder_to_move.nombre # Check file title against folder name
+        ).first()
+
+        if conflicting_folder or conflicting_file:
+            dest_name = destination_folder_obj.nombre if destination_folder_obj else "Root Folder"
+            flash(f'An item named "{folder_to_move.nombre}" already exists in "{dest_name}". Cannot move folder.', 'danger')
+            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+            return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+        # --- End Validation Checks ---
+
+        # 3. Perform the Move
+        try:
+            folder_to_move.id_carpeta_padre = destination_folder_id # Update parent ID
+            db.session.commit()
+            flash(f'Folder "{folder_to_move.nombre}" moved successfully.', 'success')
+
+            # Log activity
+            log_activity(
+                user_id=user_id,
+                activity_type='MOVE_FOLDER',
+                folder_id=folder_id,
+                ip_address=request.remote_addr,
+                details=f"Moved folder '{folder_to_move.nombre}' to Parent ID: {destination_folder_id}"
+            )
+            
+            # Redirect to the new parent folder
+            return redirect(url_for('list_files', folder_id=destination_folder_id))
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error moving folder: {e}")
+            flash('An error occurred while moving the folder.', 'danger')
+            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+            return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+
+    # --- Handle GET Request (Show Move Form) ---
+    else: # request.method == 'GET'
+        # Fetch all folders for this user to populate the destination dropdown
+        # We pass ALL folders here; the template filters out current parent/self.
+        # For a more robust UI preventing moving into descendants, filtering happens here.
+        user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+        return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+    # ------------------------------------------------------------------------------------------
 
 # --- Error Handlers ---
 @app.errorhandler(413)
