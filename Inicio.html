@@ -1,518 +1,392 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html lang="es">
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="styles/styles_Inicio.css" />
+    <link rel="stylesheet" href="styles/upload-modal.css" />
     <title>Inicio</title>
-  </head>
-  <body>
+</head>
+<body>
     <header class="header">
-      <!-- From Uiverse.io by JaydipPrajapati1910 -->
-      <label for="burger" class="burger">
-        <input id="burger" type="checkbox" />
-        <span></span>
-        <span></span>
-        <span></span>
-      </label>
-      <!--Buscar-->
-      <!-- From Uiverse.io by satyamchaudharydev -->
-      <div class="buscarUsuario">
-        <form class="form">
-          <button>
-            <svg
-              width="17"
-              height="16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              role="img"
-              aria-labelledby="search"
-            >
-              <path
-                d="M7.667 12.667A5.333 5.333 0 107.667 2a5.333 5.333 0 000 10.667zM14.334 14l-2.9-2.9"
-                stroke="currentColor"
-                stroke-width="1.333"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              ></path>
-            </svg>
-          </button>
-          <input class="input" placeholder="Buscar" required="" type="text" />
-          <button class="reset" type="reset">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              ></path>
-            </svg>
-          </button>
-        </form>
-        <!--usuario con menú desplegable-->
-        <div class="user-container">
-          <img
-            id="userIcon"
-            src="data:image/png;base64,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"
-          wialt="user-circle"
-          width="40"
-          height="40"
-        />
-          
-          <!-- Menú desplegable del usuario -->
-          <div class="user-dropdown" id="userDropdown">
-            <div class="dropdown-header">
-              <div class="user-avatar">
-                <img src="data:image/png;base64,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" alt="user-avatar" width="50" height="50">
-              </div>
-              <div class="user-name">Usuario</div>
+        <!-- From Uiverse.io by JaydipPrajapati1910 -->
+        <label for="burger" class="burger">
+            <input id="burger" type="checkbox" />
+            <span></span>
+            <span></span>
+            <span></span>
+        </label>
+        <!--Buscar-->
+        <!-- From Uiverse.io by satyamchaudharydev -->
+        <div class="buscarUsuario">
+            <form class="form">
+                <button>
+                    <svg
+                        width="17"
+                        height="16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        role="img"
+                        aria-labelledby="search"
+                    >
+                        <path
+                            d="M7.667 12.667A5.333 5.333 0 107.667 2a5.333 5.333 0 000 10.667zM14.334 14l-2.9-2.9"
+                            stroke="currentColor"
+                            stroke-width="1.333"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        ></path>
+                    </svg>
+                </button>
+                <input class="input" placeholder="Buscar" required="" type="text" />
+                <button class="reset" type="reset">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                        ></path>
+                    </svg>
+                </button>
+            </form>
+            <!--usuario con menú desplegable-->
+            <div class="user-container">
+                <img
+                    id="userIcon"
+                    src="data:image/png;base64,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"
+                    alt="user-circle"
+                    width="40"
+                    height="40"
+                />
+                
+                <!-- Menú desplegable del usuario -->
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-header">
+                        <div class="user-avatar">
+                            <img src="data:image/png;base64,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" alt="user-avatar" width="50" height="50">
+                        </div>
+                        <div class="user-name">Usuario</div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="actualizar.html" class="dropdown-item">
+                        <div class="item-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="16" rx="2" />
+                                <path d="M16 2v4" />
+                                <path d="M8 2v4" />
+                                <path d="M3 10h18" />
+                                <path d="M8 14h.01" />
+                                <path d="M12 14h.01" />
+                                <path d="M16 14h.01" />
+                                <path d="M8 18h.01" />
+                                <path d="M12 18h.01" />
+                                <path d="M16 18h.01" />
+                            </svg>
+                        </div>
+                        <div class="item-text">Actualizar datos</div>
+                    </a>
+                    <a href="Plogin.html" class="dropdown-item">
+                        <div class="item-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                        </div>
+                        <div class="item-text">Cerrar Sesión</div>
+                    </a>
+                </div>
             </div>
-            <div class="dropdown-divider"></div>
-            <a href="actualizar.html" class="dropdown-item">
-              <div class="item-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="4" width="18" height="16" rx="2" />
-                  <path d="M16 2v4" />
-                  <path d="M8 2v4" />
-                  <path d="M3 10h18" />
-                  <path d="M8 14h.01" />
-                  <path d="M12 14h.01" />
-                  <path d="M16 14h.01" />
-                  <path d="M8 18h.01" />
-                  <path d="M12 18h.01" />
-                  <path d="M16 18h.01" />
-                </svg>
-              </div>
-              <div class="item-text">Actualizar datos</div>
-            </a>
-            <a href="Plogin.html" class="dropdown-item">
-              <div class="item-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </div>
-              <div class="item-text">Cerrar Sesión</div>
-            </a>
-          </div>
         </div>
-      </div>
     </header>
 
     <main class="main">
-      <!-- Para visualizar arcivos -->
-      <div class="archivosRecientes">
-        <h4>RECIENTES...</h4>
-      </div>
-      <!--Barra lateral con las carpetas-->
-      <div class="folders-section">
-        <h2 class="folders-title">CARPETAS</h2>
-        <div class="folder-list">
-          <div class="folder-item" data-folder="formacion-academica">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Formación académica</div>
-          </div>
-          <div class="folder-item" data-folder="experiencia-laboral">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Experiencia laboral</div>
-          </div>
-          <div class="folder-item" data-folder="produccion-cientifica">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Producción científica y académica</div>
-          </div>
-          <div class="folder-item" data-folder="investigacion">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Investigación</div>
-          </div>
-          <div class="folder-item" data-folder="docencia">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Docencia</div>
-          </div>
-          <div class="folder-item" data-folder="tutoria">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Tutoría grupal e individual</div>
-          </div>
-          <div class="folder-item" data-folder="direccion-tesis">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Dirección de tesis</div>
-          </div>
-          <div class="folder-item" data-folder="gestion-academica">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Gestión académica</div>
-          </div>
-          <div class="folder-item" data-folder="congresos">
-            <div class="folder-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                x="0px"
-                y="0px"
-                width="30"
-                height="30"
-                viewBox="0,0,256,256"
-              >
-                <g
-                  fill="none"
-                  fill-rule="nonzero"
-                  stroke="#d5b25c"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-miterlimit="10"
-                  stroke-dasharray=""
-                  stroke-dashoffset="0"
-                  font-family="none"
-                  font-weight="none"
-                  font-size="none"
-                  text-anchor="none"
-                  style="mix-blend-mode: normal"
-                >
-                  <g transform="scale(5.33333,5.33333)">
-                    <path
-                      d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
-                    ></path>
-                    <path
-                      d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
-                    ></path>
-                    <path
-                      d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
-                    ></path>
-                  </g>
-                </g>
-              </svg>
-            </div>
-            <div class="folder-name">Participación en congresos</div>
-          </div>
+        <!-- Para visualizar arcivos -->
+        <div class="archivosRecientes">
+            <h4>RECIENTES...</h4>
         </div>
-      </div>
-      <div id="chooseFile">
-        <!-- From Uiverse.io by 3bdel3ziz-T -->
-        <div class="container">
-          <div class="folder">
-            <div class="front-side">
-              <div class="tip"></div>
-              <div class="cover"></div>
+        <!--Barra lateral con las carpetas-->
+        <div class="folders-section">
+            <h2 class="folders-title">CARPETAS</h2>
+            <div class="folder-list">
+                <div class="folder-item" data-folder="formacion-academica">
+                    <div class="folder-icon">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            x="0px"
+                            y="0px"
+                            width="30"
+                            height="30"
+                            viewBox="0,0,256,256"
+                        >
+                            <g
+                                fill="none"
+                                fill-rule="nonzero"
+                                stroke="#d5b25c"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-miterlimit="10"
+                                stroke-dasharray=""
+                                stroke-dashoffset="0"
+                                font-family="none"
+                                font-weight="none"
+                                font-size="none"
+                                text-anchor="none"
+                                style="mix-blend-mode: normal"
+                            >
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path
+                                        d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
+                                    ></path>
+                                    <path
+                                        d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
+                                    ></path>
+                                    <path
+                                        d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
+                                    ></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Formación académica</div>
+                </div>
+                <div class="folder-item" data-folder="experiencia-laboral">
+                    <div class="folder-icon">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            x="0px"
+                            y="0px"
+                            width="30"
+                            height="30"
+                            viewBox="0,0,256,256"
+                        >
+                            <g
+                                fill="none"
+                                fill-rule="nonzero"
+                                stroke="#d5b25c"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-miterlimit="10"
+                                stroke-dasharray=""
+                                stroke-dashoffset="0"
+                                font-family="none"
+                                font-weight="none"
+                                font-size="none"
+                                text-anchor="none"
+                                style="mix-blend-mode: normal"
+                            >
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path
+                                        d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"
+                                    ></path>
+                                    <path
+                                        d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"
+                                    ></path>
+                                    <path
+                                        d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"
+                                    ></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Experiencia laboral</div>
+                </div>
+                <!-- Resto de carpetas... -->
+                <div class="folder-item" data-folder="produccion-cientifica">
+                    <div class="folder-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
+                            <g fill="none" fill-rule="nonzero" stroke="#d5b25c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"></path>
+                                    <path d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"></path>
+                                    <path d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Producción científica y académica</div>
+                </div>
+                <div class="folder-item" data-folder="investigacion">
+                    <div class="folder-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
+                            <g fill="none" fill-rule="nonzero" stroke="#d5b25c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"></path>
+                                    <path d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"></path>
+                                    <path d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Investigación</div>
+                </div>
+                <div class="folder-item" data-folder="docencia">
+                    <div class="folder-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
+                            <g fill="none" fill-rule="nonzero" stroke="#d5b25c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"></path>
+                                    <path d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"></path>
+                                    <path d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Docencia</div>
+                </div>
+                <div class="folder-item" data-folder="tutoria">
+                    <div class="folder-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
+                            <g fill="none" fill-rule="nonzero" stroke="#d5b25c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"></path>
+                                    <path d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"></path>
+                                    <path d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Tutoría grupal e individual</div>
+                </div>
+                <div class="folder-item" data-folder="direccion-tesis">
+                    <div class="folder-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
+                            <g fill="none" fill-rule="nonzero" stroke="#d5b25c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"></path>
+                                    <path d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"></path>
+                                    <path d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Dirección de tesis</div>
+                </div>
+                <div class="folder-item" data-folder="gestion-academica">
+                    <div class="folder-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
+                            <g fill="none" fill-rule="nonzero" stroke="#d5b25c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"></path>
+                                    <path d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"></path>
+                                    <path d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Gestión académica</div>
+                </div>
+                <div class="folder-item" data-folder="congresos">
+                    <div class="folder-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="30" viewBox="0,0,256,256">
+                            <g fill="none" fill-rule="nonzero" stroke="#d5b25c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+                                <g transform="scale(5.33333,5.33333)">
+                                    <path d="M5.5,29.8v6.7c0,1.7 1.3,3 3,3h31c1.7,0 3,-1.3 3,-3v-20c0,-1.7 -1.3,-3 -3,-3h-1.1"></path>
+                                    <path d="M32.7,13.5h-9.2l-4.9,-4.1c-0.7,-0.6 -1.6,-0.9 -2.6,-0.9h-7.5c-1.7,0 -3,1.3 -3,3v11.7"></path>
+                                    <path d="M6,16.5h12.1c0.9,0 1.8,-0.3 2.6,-0.9l2.3,-1.9"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="folder-name">Participación en congresos</div>
+                </div>
             </div>
-            <div class="back-side cover"></div>
-          </div>
-          <label class="custom-file-upload">
-            <input class="title" type="file" />
-            SUBIR ARCHIVO
-          </label>
         </div>
-      </div>
+        <div id="chooseFile">
+            <div class="container">
+              <div class="folder">
+                <div class="front-side">
+                  <div class="tip"></div>
+                  <div class="cover"></div>
+                </div>
+                <div class="back-side cover"></div>
+              </div>
+              <button class="custom-file-upload">SUBIR ARCHIVO</button>
+            </div>
+          </div>
     </main>
 
+    <!-- Modal para subir archivos -->
+    <div id="upload-modal" class="upload-modal">
+        <div class="upload-modal-content">
+            <h2>Subir Archivo</h2>
+            
+            <form id="upload-form">
+                <div class="form-group">
+                    <label for="file-name">Nombre del archivo</label>
+                    <input type="text" id="file-name" placeholder="Nombre del archivo" required>
+                </div>
+                
+                <div class="form-group date-group">
+                    <label>Fecha</label>
+                    <div class="date-inputs">
+                        <input type="text" id="day-input" placeholder="DD" maxlength="2">
+                        <input type="text" id="month-input" placeholder="MM" maxlength="2">
+                        <input type="text" id="year-input" placeholder="AAAA" maxlength="4">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="folder-select">Carpeta destino</label>
+                    <select id="folder-select" required>
+                        <option value="" disabled selected>Seleccionar carpeta</option>
+                        <option value="formacion-academica">Formación académica</option>
+                        <option value="experiencia-laboral">Experiencia laboral</option>
+                        <option value="produccion-cientifica">Producción científica y académica</option>
+                        <option value="investigacion">Investigación</option>
+                        <option value="docencia">Docencia</option>
+                        <option value="tutoria">Tutoría grupal e individual</option>
+                        <option value="direccion-tesis">Dirección de tesis</option>
+                        <option value="gestion-academica">Gestión académica</option>
+                        <option value="congresos">Participación en congresos</option>
+                    </select>
+                </div>
+                
+                <div class="file-upload-area">
+                    <input type="file" id="file-input" hidden>
+                    
+                    <div id="drop-area" class="drop-area">
+                        <div id="drag-text" class="drag-text">
+                            <span id="drag-icon" class="drag-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#d5b25c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </span>
+                            <p>Arrastra tu archivo aquí o</p>
+                            <button type="button" id="upload-button" class="upload-button">Seleccionar archivo</button>
+                        </div>
+                        
+                        <div id="preview-container" class="preview-container" style="display: none;">
+                            <img id="preview-image" class="preview-image">
+                            <div class="preview-info">
+                                <p id="preview-name" class="preview-name"></p>
+                                <p id="preview-type" class="preview-type"></p>
+                                <p id="preview-size" class="preview-size"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" id="cancel-button" class="cancel-button">Cancelar</button>
+                    <button type="submit" id="submit-button" class="submit-button">Subir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="js/inicio.js"></script>
-  </body>
+    <script src="js/upload-file.js"></script>
+</body>
 </html>
