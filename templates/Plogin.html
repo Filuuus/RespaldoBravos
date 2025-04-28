@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/stylesPlogin.css') }}">
+</head>
+<body>
+  <div class="container">
+    <!-- Lado izquierdo - Imagen -->
+    <div class="image-side"></div>
+    
+    <!-- Lado derecho - Formulario -->
+    <div class="form-side">
+      <div class="login-form">
+        <div class="header">
+          <h1>¡Hola!</h1>
+          <p>Por favor, inicia sesión</p>
+        </div>
+        
+        <div id="error-message" class="error-message"></div>
+        
+        <form id="login-form">
+          <div class="form-group">
+            <input type="text" id="username" placeholder="Usuario" required>
+          </div>
+          
+          <div class="form-group">
+            <input type="password" id="password" placeholder="Contraseña" required>
+          </div>
+          
+          <div class="register-text">
+            ¿No tienes cuenta?, regístrate.
+          </div>
+          
+          <div class="button-group">
+            <button type="button" class="btn btn-register" onclick="window.location.href='Pregistro.html'">Registrarse</button>
+            <button type="submit" id="login-button" class="btn btn-login">Iniciar Sesión</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>
