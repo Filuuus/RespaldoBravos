@@ -1,0 +1,69 @@
+<div id="upload-modal" class="upload-modal">
+    <div class="upload-modal-content">
+        <h2>Subir Archivo</h2>
+        
+        <form id="upload-form">
+            <div class="form-group">
+                <label for="file-name">Nombre del archivo</label>
+                <input type="text" id="file-name" placeholder="Nombre del archivo" required>
+            </div>
+            
+            <div class="form-group date-group">
+                <label>Fecha</label>
+                <div class="date-inputs">
+                    <input type="text" id="day-input" placeholder="DD" maxlength="2">
+                    <input type="text" id="month-input" placeholder="MM" maxlength="2">
+                    <input type="text" id="year-input" placeholder="AAAA" maxlength="4">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="folder-select">Carpeta destino</label>
+                <select id="folder-select" required>
+                    <option value="" disabled selected>Seleccionar carpeta</option>
+                    <option value="formacion-academica">Formación académica</option>
+                    <option value="experiencia-laboral">Experiencia laboral</option>
+                    <option value="produccion-cientifica">Producción científica y académica</option>
+                    <option value="investigacion">Investigación</option>
+                    <option value="docencia">Docencia</option>
+                    <option value="tutoria">Tutoría grupal e individual</option>
+                    <option value="direccion-tesis">Dirección de tesis</option>
+                    <option value="gestion-academica">Gestión académica</option>
+                    <option value="congresos">Participación en congresos</option>
+                </select>
+            </div>
+            
+            <div class="file-upload-area">
+                <input type="file" id="file-input" hidden>
+                
+                <div id="drop-area" class="drop-area">
+                    <div id="drag-text" class="drag-text">
+                        <span id="drag-icon" class="drag-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#d5b25c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </span>
+                        <p>Arrastra tu archivo aquí o</p>
+                        <button type="button" id="upload-button" class="upload-button">Seleccionar archivo</button>
+                    </div>
+                    
+                    <div id="preview-container" class="preview-container" style="display: none;">
+                        <img id="preview-image" class="preview-image">
+                        <div class="preview-info">
+                            <p id="preview-name" class="preview-name"></p>
+                            <p id="preview-type" class="preview-type"></p>
+                            <p id="preview-size" class="preview-size"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" id="cancel-button" class="cancel-button">Cancelar</button>
+                <button type="submit" id="submit-button" class="submit-button">Subir</button>
+            </div>
+        </form>
+    </div>
+</div>

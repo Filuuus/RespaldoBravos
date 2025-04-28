@@ -1,7 +1,5 @@
 # FTTBOX
 
-A brief description of the Flask application, e.g., "A web application for managing and storing documents and folders, similar to Google Drive."
-
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
@@ -13,7 +11,7 @@ Before you begin, ensure you have the following installed on your system:
 * **AWS Account & IAM Credentials:**
     * An AWS account is required for S3 storage.
     * Each developer needs an IAM User with programmatic access (Access Key ID and Secret Access Key).
-    * This IAM User needs permissions to perform actions (like `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`) on the designated S3 bucket. (**Note:** Provide specific instructions or policies given to teammates here).
+    * This IAM User needs permissions to perform actions (like `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`) on the designated S3 bucket.
 
 ## Setup Instructions
 

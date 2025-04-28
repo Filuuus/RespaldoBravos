@@ -18,6 +18,12 @@ from extensions import db
 from flask_migrate import Migrate
 from models import ActividadUsuario
 from flask import request
+from sqlalchemy import asc, desc, text, or_
+
+from zeep import Client, Settings, Transport # Import Zeep classes
+from zeep.exceptions import Fault # Import specific Zeep exception
+from models import Usuario # Import User model where needed
+from datetime import datetime, timezone # Add timezone here
 
 load_dotenv() 
 
@@ -35,6 +41,9 @@ app.config['S3_REGION'] = os.environ.get('S3_REGION')
 MAX_MB = int(os.environ.get('MAX_CONTENT_LENGTH_MB', 50)) 
 app.config['MAX_CONTENT_LENGTH'] = MAX_MB * 1024 * 1024 
 app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+
+app.config['SIIAU_WSDL_URL'] = os.environ.get('SIIAU_WSDL_URL')
+app.config['SIIAU_VALIDA_KEY'] = os.environ.get('SIIAU_VALIDA_KEY')
 
 # --- 2. Initialize Extensions that NEED config (like DB) ---
 db.init_app(app) 
@@ -63,6 +72,26 @@ except Exception as e:
     print(f"Error initializing Boto3 S3 Client: {e}")
     s3_client = None 
 # ---------------------------------------------------------------------
+
+
+# --- Initialize Zeep SOAP Client ---
+siiau_client = None
+try:
+    if app.config['SIIAU_WSDL_URL']:
+        # strict=False can help with compatibility with some SOAP services
+        settings = Settings(strict=False, xml_huge_tree=True) 
+        # transport = Transport(timeout=10) # Optional: set timeout
+        siiau_client = Client(app.config['SIIAU_WSDL_URL'], settings=settings) #, transport=transport)
+        print("Zeep SIIAU Client Initialized Successfully.")
+        # Optional: Check if service/methods expected are available
+        # print(siiau_client.service)
+    else:
+        print("SIIAU WSDL URL missing, Zeep client not initialized.")
+except Exception as e:
+    print(f"Error initializing Zeep SIIAU Client: {e}")
+    siiau_client = None
+# ---------------------------------
+
 
 
 # --- Jinja Custom Filter for File Size ---
@@ -112,23 +141,148 @@ def login_required(f):
     return decorated_function
 
 # --- Dummy Login/Logout Routes (Placeholders) ---
-@app.route('/login') 
-def login():
-    user_id_to_log = 1 # Use the dummy ID
-    session['user_id'] = user_id_to_log 
-    flash('You were logged in (dummy login).', 'success')
-    # Log after setting session
-    log_activity(user_id=user_id_to_log, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr) 
-    return redirect(request.args.get('next') or url_for('hello_world'))
+# @app.route('/login') 
+# def login():
+#     user_id_to_log = 1 # Use the dummy ID
+#     session['user_id'] = user_id_to_log 
+#     flash('You were logged in (dummy login).', 'success')
+#     # Log after setting session
+#     log_activity(user_id=user_id_to_log, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr) 
+#     return redirect(request.args.get('next') or url_for('hello_world'))
 
+
+# --- Real Login Route ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # If user is already logged in, redirect them away from login page
+    if 'user_id' in session:
+        return redirect(url_for('list_files')) 
+
+    if request.method == 'POST':
+        codigo = request.form.get('codigo')
+        nip = request.form.get('nip')
+        next_url = request.form.get('next') # Get redirect URL if provided
+
+        if not codigo or not nip:
+            flash('Please enter both Código and NIP.', 'warning')
+            return render_template('login.html')
+
+        # Check if Zeep client is available
+        if not siiau_client:
+             flash('Authentication service is currently unavailable.', 'danger')
+             return render_template('login.html')
+        
+        # Call the SIIAU valida service
+        try:
+            print(f"Calling SIIAU valida for user: {codigo}") # Log attempt
+            key = app.config.get('SIIAU_VALIDA_KEY')
+            if not key:
+                 raise ValueError("SIIAU Valida Key not configured in application.")
+
+            # Call the service using parameter names from WSDL/example
+            response = siiau_client.service.valida(usuario=codigo, password=nip, key=key) 
+            print(f"SIIAU Response: {response}") # Log raw response
+
+            # Process the response
+            if response == "0" or not response: # Check for '0' or empty/None response
+                 flash('Invalid CODE or NIP.', 'danger')
+                #  log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo}")
+                 return render_template('login.html')
+            else:
+                 # Successful authentication - Parse the response string
+                 # Expected: "T/E/A,Nombre Completo,Campus,SiglasCarrera/Campus"
+                 try:
+                     parts = response.split(',', 4) # Split only 3 times to keep name intact
+                     if len(parts) < 5: 
+                          raise ValueError("Unexpected response format from auth service.")
+                     
+                     tipo = parts[0].strip()
+                     codigo = parts[1].strip()
+                     nombre = parts[2].strip()
+                     plantel = parts[3].strip()
+                     seccion = parts[4].strip() 
+
+                     # Find or Create user in local database
+                     user = Usuario.query.filter_by(codigo_usuario=codigo).first()
+
+                     if user:
+                         # User exists, update details and last login
+                         print(f"Found existing user: {user.id_usuario}")
+                         user.nombre_completo = nombre
+                         user.tipo_usuario = tipo
+                         user.plantel = plantel
+                         user.seccion = seccion
+                         user.ultimo_login = datetime.now(timezone.utc) # Or db.func.now()
+                         user.is_active = True # Ensure user is active on successful login
+                     else:
+                         # User doesn't exist, create new record
+                         print(f"Creating new user for codigo: {codigo}")
+                         user = Usuario(
+                             codigo_usuario=codigo,
+                             nombre_completo=nombre,
+                             tipo_usuario=tipo,
+                             plantel=plantel,
+                             seccion=seccion,
+                             ultimo_login=datetime.utcnow() # Or db.func.now()
+                             # fecha_registro has default, is_active has default
+                         )
+                         db.session.add(user)
+                     
+                     db.session.commit() # Commit update or new user
+
+                     # Store LOCAL user ID in session
+                     session['user_id'] = user.id_usuario 
+                     session.permanent = True # Make session last longer (configure duration via app.permanent_session_lifetime)
+                     
+                     flash(f'Welcome back, {user.nombre_completo}!', 'success')
+                     log_activity(user_id=user.id_usuario, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr)
+                     
+                     # Redirect to the originally requested page or default file list
+                     return redirect(next_url or url_for('list_files'))
+
+                 except Exception as e:
+                      db.session.rollback() # Rollback DB changes if parsing/saving failed
+                      print(f"Error processing successful SIIAU response or saving user: {e}")
+                      flash('Login succeeded but failed to process user data.', 'danger')
+                      return render_template('login.html')
+
+        # Handle exceptions during the SOAP call (e.g., connection errors, timeouts, SOAP Faults)
+        except Fault as fault: # Specific Zeep exception for SOAP faults
+             print(f"SIIAU SOAP Fault: {fault}")
+             flash(f'Authentication service error: {fault.message}', 'danger')
+             log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo} - SOAP Fault: {fault.message}")
+             return render_template('login.html')
+        except Exception as e: # Catch other potential errors (network, etc.)
+             print(f"SIIAU Call Error: {e}")
+             flash(f'Error communicating with authentication service: {e}', 'danger')
+             log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo} - Connection/Other Error")
+             return render_template('login.html')
+
+    # --- Handle GET Request (Show Login Form) ---
+    else: # request.method == 'GET'
+        # Pass current year to template for optional footer display
+        current_year = datetime.now(timezone.utc).year 
+        return render_template('login.html', now={'year': current_year})
+
+# --- Update Logout ---
 @app.route('/logout')
+@login_required # Add decorator to ensure user is logged in before logging out
 def logout():
-    user_id_to_log = session.get('user_id') # Get ID *before* popping
+    user_id_to_log = session.get('user_id') 
     session.pop('user_id', None) 
-    flash('You were logged out.', 'info')
-    if user_id_to_log: # Only log if a user was actually logged in
+    flash('You have been successfully logged out.', 'info')
+    if user_id_to_log: 
          log_activity(user_id=user_id_to_log, activity_type='LOGOUT', ip_address=request.remote_addr)
-    return redirect(url_for('login'))
+    return redirect(url_for('login')) 
+
+# @app.route('/logout')
+# def logout():
+#     user_id_to_log = session.get('user_id') # Get ID *before* popping
+#     session.pop('user_id', None) 
+#     flash('You were logged out.', 'info')
+#     if user_id_to_log: # Only log if a user was actually logged in
+#          log_activity(user_id=user_id_to_log, activity_type='LOGOUT', ip_address=request.remote_addr)
+#     return redirect(url_for('login'))
 
 # --- File Upload Route ---
 # Modify route definition to accept optional parent folder ID
@@ -318,153 +472,134 @@ def upload_route(parent_folder_id):
 @login_required
 def list_files(folder_id):
     # --- Import models needed ---
-    from models import Documento, Categoria, Carpeta, Usuario 
-    from sqlalchemy import asc, desc, text 
+    from models import Documento, Categoria, Carpeta, Usuario
+    from sqlalchemy import asc, desc, text, or_ # Ensure text and or_ are imported
     # ----------------------------
-    
+
     user_id = session.get('user_id')
     if not user_id:
         flash('User session error.', 'danger')
         return redirect(url_for('login'))
 
-    # --- Get Sort Parameters ---
-    sort_by = request.args.get('sort_by', 'name') 
-    sort_dir = request.args.get('sort_dir', 'asc') 
+    # --- Get Sort and Search Parameters ---
+    sort_by = request.args.get('sort_by', 'name')
+    sort_dir = request.args.get('sort_dir', 'asc')
+    search_term = request.args.get('q', '').strip()
 
     # --- Determine Sort Columns and Direction ---
-    folder_order_by = Carpeta.nombre 
-    document_order_by = Documento.titulo_original 
-    
-    # Map sort_by parameter
-    if sort_by == 'name':
-        folder_order_by = Carpeta.nombre
-        document_order_by = Documento.titulo_original
-    elif sort_by == 'date':
-        folder_order_by = Carpeta.fecha_modificacion 
-        document_order_by = Documento.fecha_carga
-    elif sort_by == 'type':
-        pass # Document query handles this via join
-    elif sort_by == 'size':
-        folder_order_by = Carpeta.nombre # Keep default for folders
-        document_order_by = Documento.file_size
+    folder_order_by = Carpeta.nombre
+    document_order_by = Documento.titulo_original
+    # Map sort_by parameter (check previous response for full logic if needed)
+    if sort_by == 'name': folder_order_by, document_order_by = Carpeta.nombre, Documento.titulo_original
+    elif sort_by == 'date': folder_order_by, document_order_by = Carpeta.fecha_modificacion, Documento.fecha_carga
+    elif sort_by == 'size': document_order_by = Documento.file_size # folder order remains default
+    # Type sort handled later with join
 
     # Determine sort direction function
-    if sort_dir == 'desc':
-        folder_order_func = desc
-        document_order_func = desc
-    else: 
-        sort_dir = 'asc' 
-        folder_order_func = asc
-        document_order_func = asc
-        
+    if sort_dir == 'desc': folder_order_func, document_order_func = desc, desc
+    else: sort_dir, folder_order_func, document_order_func = 'asc', asc, asc
+
     # Initialize lists/variables
     sub_folders = []
     documents_in_folder = []
-    current_folder_name = "My Files (Root)" 
-    breadcrumbs = [] 
+    current_folder_name = "My Files (Root)"
+    breadcrumbs = []
 
     try:
         # --- Fetch Current Folder and Ancestors (Breadcrumbs) ---
+        # This whole block needs to be present if folder_id is not None
         if folder_id:
-            # Use a recursive query to get the path from root to current folder
             sql_query = text("""
                 WITH RECURSIVE folder_path AS (
                     SELECT id_carpeta, nombre, id_carpeta_padre
-                    FROM carpetas
-                    WHERE id_carpeta = :current_folder_id AND id_usuario = :user_id
+                    FROM carpetas WHERE id_carpeta = :current_folder_id AND id_usuario = :user_id
                     UNION ALL
                     SELECT c.id_carpeta, c.nombre, c.id_carpeta_padre
-                    FROM carpetas c
-                    JOIN folder_path fp ON c.id_carpeta = fp.id_carpeta_padre
+                    FROM carpetas c JOIN folder_path fp ON c.id_carpeta = fp.id_carpeta_padre
                     WHERE c.id_usuario = :user_id
                 )
                 SELECT id_carpeta, nombre, id_carpeta_padre FROM folder_path;
             """)
-            
             result = db.session.execute(sql_query, {'current_folder_id': folder_id, 'user_id': user_id})
             
             try:
-                 all_ancestors = [dict(row) for row in result.mappings()] 
+                 all_ancestors = [dict(row) for row in result.mappings()]
             except Exception as mapping_e:
-                 print(f"Warning: Error converting breadcrumb query result: {mapping_e}") 
+                 print(f"Warning: Error converting breadcrumb query result: {mapping_e}")
                  all_ancestors = []
 
-            path_data = {row['id_carpeta']: row for row in all_ancestors} 
+            path_data = {row['id_carpeta']: row for row in all_ancestors}
 
-            if folder_id not in path_data: 
+            if folder_id not in path_data:
                  flash("Folder not found or access denied.", "warning")
-                 return redirect(url_for('list_files', folder_id=None)) 
+                 return redirect(url_for('list_files', folder_id=None))
 
             # Reconstruct path from root to current
-            breadcrumbs = [] 
             curr_id = folder_id
-            visited = set() 
+            visited = set()
             while curr_id is not None:
-                if curr_id in visited or len(visited) > 20: # Add loop limit
-                    print(f"Warning: Breadcrumb cycle detected or limit reached at {curr_id}") 
-                    breadcrumbs = [] 
-                    break
+                if curr_id in visited or len(visited) > 20: # Safety limit
+                    print(f"Warning: Breadcrumb cycle detected or limit reached at {curr_id}")
+                    breadcrumbs = [] ; break
                 visited.add(curr_id)
-
                 folder_info = path_data.get(curr_id)
                 if folder_info:
-                    breadcrumbs.insert(0, {'id': folder_info['id_carpeta'], 'nombre': folder_info['nombre']}) 
+                    breadcrumbs.insert(0, {'id': folder_info['id_carpeta'], 'nombre': folder_info['nombre']})
                     curr_id = folder_info['id_carpeta_padre']
                 else:
-                    # This case means root (parent is NULL) or data inconsistency
-                    if curr_id in path_data: # It was the actual root folder in path_data
-                         pass # Root reached successfully
-                    else: # Data for curr_id was missing, error
-                         print(f"Warning: Could not find ancestor data for ID {curr_id} in path_data.") 
-                    break 
+                    if curr_id in path_data: pass # Reached root successfully
+                    else: print(f"Warning: Could not find ancestor data for ID {curr_id} in path_data.")
+                    break
             
-            if breadcrumbs:
-                current_folder_name = breadcrumbs[-1]['nombre'] 
-            else:
-                 # Path reconstruction failed after initial check passed - should be rare
-                 print(f"Warning: Breadcrumb list empty after reconstruction for folder {folder_id}") 
-                 current_folder_name = "Error Loading Name" 
-                 # Optional: redirect to root if breadcrumbs fail badly
-                 # return redirect(url_for('list_files'))
+            if breadcrumbs: current_folder_name = breadcrumbs[-1]['nombre']
+            else: current_folder_name = "Error Loading Name"
+        # --- End of Breadcrumb Logic ---
 
-        # --- Fetch Contents with Sorting ---
-        sub_folders = Carpeta.query.filter_by(
-            id_usuario=user_id, 
-            id_carpeta_padre=folder_id 
-        ).order_by(folder_order_func(folder_order_by)).all()
+        # --- Fetch Contents (Apply Search Filter first) ---
+        # Base Queries
+        folder_query = Carpeta.query.filter_by(id_usuario=user_id, id_carpeta_padre=folder_id)
+        doc_query = Documento.query.filter_by(id_usuario=user_id, id_carpeta=folder_id)
 
-        doc_query = Documento.query.filter_by(
-            id_usuario=user_id, 
-            id_carpeta=folder_id 
-        )
-        # Add join/order for type sort
+        # Apply Search Filter IF search_term exists
+        if search_term:
+            search_like = f"%{search_term}%"
+            folder_query = folder_query.filter(Carpeta.nombre.ilike(search_like))
+            doc_query = doc_query.filter(
+                or_(
+                    Documento.titulo_original.ilike(search_like),
+                    Documento.descripcion.ilike(search_like)
+                )
+            )
+
+        # --- Apply Sorting ---
+        sub_folders = folder_query.order_by(folder_order_func(folder_order_by)).all()
+
         if sort_by == 'type':
              doc_query = doc_query.outerjoin(Categoria, Documento.id_categoria == Categoria.id_categoria)\
                                   .order_by(document_order_func(Categoria.nombre), asc(Documento.titulo_original))
         else:
              doc_query = doc_query.order_by(document_order_func(document_order_by))
-             
+
         documents_in_folder = doc_query.all()
-        
+
     except Exception as e:
-        db.session.rollback() 
-        print(f"Database query error in list_files: {e}") 
+        db.session.rollback()
+        print(f"Database query error in list_files: {e}")
         flash('Error retrieving contents from database.', 'danger')
-        sub_folders = []
-        documents_in_folder = []
-        breadcrumbs = []
+        sub_folders, documents_in_folder, breadcrumbs = [], [], []
         current_folder_name = "Error"
 
     # Render the template
     return render_template(
-        'file_list.html', 
-        folders=sub_folders, 
+        'file_list.html',
+        folders=sub_folders,
         documents=documents_in_folder,
         current_folder_id=folder_id,
         current_folder_name=current_folder_name,
         breadcrumbs=breadcrumbs,
-        sort_by=sort_by, 
-        sort_dir=sort_dir
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        search_term=search_term
     )
 
 
@@ -964,7 +1099,7 @@ def rename_folder(folder_id):
     # --- Handle GET Request (Show Rename Form) ---
     else: # request.method == 'GET'
         return render_template('rename_folder.html', folder=folder_to_rename)
-
+# ----------------------------------------------------------------------------
 
 # --- Move File Route ---
 @app.route('/move_file/<int:doc_id>', methods=['GET', 'POST'])
@@ -1050,12 +1185,145 @@ def move_file(doc_id):
             user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
             return render_template('move_file.html', document=doc_to_move, folders=user_folders)
 
-
     # --- Handle GET Request (Show Move Form) ---
     else: # request.method == 'GET'
         # Fetch all folders for this user to populate the dropdown
         user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
         return render_template('move_file.html', document=doc_to_move, folders=user_folders)
+    # ----------------------------------------------------------------------------
+
+
+# --- Move Folder Route ---
+@app.route('/move_folder/<int:folder_id>', methods=['GET', 'POST'])
+@login_required
+def move_folder(folder_id):
+    # --- Import models needed ---
+    from models import Carpeta, Documento # Need Documento for name conflict check
+    from sqlalchemy import text # For recursive query
+    # --------------------------
+
+    user_id = session.get('user_id')
+    if not user_id: # Defensive check
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    # Fetch the folder to move, ensuring ownership
+    folder_to_move = Carpeta.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first_or_404()
+    original_parent_id = folder_to_move.id_carpeta_padre # Store for redirects/logging
+
+    if request.method == 'POST':
+        dest_folder_id_str = request.form.get('destination_folder', '') # "" for root
+
+        # 1. Determine Target Folder ID (None for root)
+        destination_folder_id = None
+        if dest_folder_id_str.isdigit():
+            destination_folder_id = int(dest_folder_id_str)
+        elif dest_folder_id_str != '':
+             flash("Invalid destination folder value.", "danger")
+             # Re-render needed info for GET part
+             user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+             return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+        # 2. === Validation Checks ===
+
+        # 2a. Cannot move to the same folder (Technically redundant with 2c check)
+        if folder_to_move.id_carpeta_padre == destination_folder_id:
+            flash('Folder is already in that location.', 'info')
+            return redirect(url_for('list_files', folder_id=original_parent_id))
+
+        # 2b. Cannot move folder into itself
+        if destination_folder_id == folder_id:
+             flash("Cannot move a folder into itself.", "danger")
+             user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+             return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+        # 2c. Cycle Check: Cannot move folder into one of its own descendants
+        #     We need to get all descendant folder IDs of the folder being moved
+        if destination_folder_id is not None: # No need to check if moving to root
+            descendant_ids = set()
+            # Use a recursive query to find all children, grandchildren, etc.
+            sql_descendants = text("""
+                WITH RECURSIVE subfolders AS (
+                    SELECT id_carpeta FROM carpetas WHERE id_carpeta = :start_folder_id AND id_usuario = :user_id
+                    UNION ALL
+                    SELECT c.id_carpeta FROM carpetas c JOIN subfolders s ON c.id_carpeta_padre = s.id_carpeta
+                    WHERE c.id_usuario = :user_id
+                )
+                SELECT id_carpeta FROM subfolders WHERE id_carpeta != :start_folder_id; 
+            """) # Exclude the start folder itself
+            
+            result = db.session.execute(sql_descendants, {'start_folder_id': folder_id, 'user_id': user_id})
+            descendant_ids = {row.id_carpeta for row in result}
+            
+            if destination_folder_id in descendant_ids:
+                 flash("Cannot move a folder into one of its own sub-folders.", "danger")
+                 user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+                 return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+        # 2d. Name Conflict Check: Check if folder/file with same name exists in destination
+        destination_folder_obj = None # Store destination folder object if applicable
+        if destination_folder_id is not None:
+            destination_folder_obj = Carpeta.query.filter_by(id_carpeta=destination_folder_id, id_usuario=user_id).first()
+            if not destination_folder_obj:
+                 flash("Destination folder not found or access denied.", "danger")
+                 user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+                 return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+        conflicting_folder = Carpeta.query.filter(
+            Carpeta.id_usuario == user_id,
+            Carpeta.id_carpeta_padre == destination_folder_id,
+            Carpeta.nombre == folder_to_move.nombre,
+            Carpeta.id_carpeta != folder_id # Exclude self
+        ).first()
+
+        # Also check for conflicting *file* names in destination
+        conflicting_file = Documento.query.filter(
+            Documento.id_usuario == user_id,
+            Documento.id_carpeta == destination_folder_id,
+            Documento.titulo_original == folder_to_move.nombre # Check file title against folder name
+        ).first()
+
+        if conflicting_folder or conflicting_file:
+            dest_name = destination_folder_obj.nombre if destination_folder_obj else "Root Folder"
+            flash(f'An item named "{folder_to_move.nombre}" already exists in "{dest_name}". Cannot move folder.', 'danger')
+            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+            return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+        # --- End Validation Checks ---
+
+        # 3. Perform the Move
+        try:
+            folder_to_move.id_carpeta_padre = destination_folder_id # Update parent ID
+            db.session.commit()
+            flash(f'Folder "{folder_to_move.nombre}" moved successfully.', 'success')
+
+            # Log activity
+            log_activity(
+                user_id=user_id,
+                activity_type='MOVE_FOLDER',
+                folder_id=folder_id,
+                ip_address=request.remote_addr,
+                details=f"Moved folder '{folder_to_move.nombre}' to Parent ID: {destination_folder_id}"
+            )
+            
+            # Redirect to the new parent folder
+            return redirect(url_for('list_files', folder_id=destination_folder_id))
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error moving folder: {e}")
+            flash('An error occurred while moving the folder.', 'danger')
+            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+            return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+
+
+    # --- Handle GET Request (Show Move Form) ---
+    else: # request.method == 'GET'
+        # Fetch all folders for this user to populate the destination dropdown
+        # We pass ALL folders here; the template filters out current parent/self.
+        # For a more robust UI preventing moving into descendants, filtering happens here.
+        user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+        return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
+    # ------------------------------------------------------------------------------------------
 
 # --- Error Handlers ---
 @app.errorhandler(413)

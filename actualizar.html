@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles/actualizar_datos.css">
+    <title>Actualizar Datos</title>
+</head>
+<body>
+    <header class="header">
+        <!-- From Uiverse.io by JaydipPrajapati1910 -->
+        <label for="burger" class="burger">
+            <input id="burger" type="checkbox" />
+            <span></span>
+            <span></span>
+            <span></span>
+        </label>
+        <!--Buscar-->
+        <!-- From Uiverse.io by satyamchaudharydev -->
+        <div class="buscarUsuario">
+            <form class="form">
+                <button>
+                    <svg width="17" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="search">
+                        <path d="M7.667 12.667A5.333 5.333 0 107.667 2a5.333 5.333 0 000 10.667zM14.334 14l-2.9-2.9" stroke="currentColor" stroke-width="1.333" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
+                <input class="input" placeholder="Buscar" required="" type="text" />
+                <button class="reset" type="reset">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </form>
+            <!--usuario con menú desplegable-->
+            <div class="user-container">
+                <img id="userIcon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEBUlEQVR4nO2ZW4hVVRjHf3PmzHgZ8zJeJi+ZF7xAXtLMCEYxghIqpQcfpIcuYvYgWBYVPUWUDypIP1QvUg8JBSYpFCVUVKiVYV4qzcoaL2COl3G8jc7MN7GGfSzPnL332Wefs/eE84fFOey9vrW+/1nfWt9a37eg/+Mw4DZgGXAvsAiYAUwGRgNDgUrgb+AX4CxwDDgIHABOAJ2ZGp8FjAXWAruBdqAn5tcO7ALWACXpGj8QWA58BnSlYbTf1wWUAQ8lMn4I8BzwWwrG+n1ngOXAgFQMHwO8D3RkwXC/rwN4FxgVxfhbgC+z/NbDfMeAW8OMHwSUZ9Fov+8rYGCQ8XcCv+fQeL/vd2BBkPGbcmx8j/e1AZv8xo8FmnNsfI/3NQHj/AaXFoDxPd5X7je4vkCM7/G+On/nZQVkfA/wsd/gugIyvht4w9/5SoEY3w2s8Hd+XSAA3QKs9Hd+WQAAPcAL/s5/MxzQDTzr7zzLAIAu4El/5/kGALQDj/o7P2wAQCMwx995rgEAZ4Dp/s5zDQA4Cdzh7zzXAIB9wGR/57kGAGwHRvg7zzUA4ANgkL/zXAMAXgf6+TvPNQDgRaBfUOe5BLAaGBDUea4ArAKGBHWeKwDLgWFBnecCwGJgRFDnuQAwD7g+qPNsA5gNTArqPNsApgJTgjrPJoBJwIygzrMJYDIwM6jzbAEYD8wO6jxbAMYA9wR1ni0Ao4B7gzrPFoDhwANBnWcLwBDgoaDOswVgELA4qPNsARgAPBzUebYA9AceCeo8WwD6AUuCOs8WgL7AY0GdZwtAKfB4UOfZAlACPBHUebYAlABPBXWeLQAlwDNBnWcLQAnwXFDn2QJQArwY1Hm2AJQArwR1ni0AJcCbQZ1nC0AJ8E5Q59kCUAK8F9R5tgCUAB8GdZ4tACXAx0GdZwtAP+CToM6zBWAg8FlQ59kCMAT4IqjzbAEYAXwZ1Hm2AIwBdgR1ni0AE4FdQZ1nC8BM4OugzrMFYB6wN6jzbAG4H/g+qPNsAVgEHAnqPFsAlgDHgzrPFoBlwKmgzrMF4FngXFDn2QKwCrgQ1Hm2ALwEXAzqPFsA1gCXgjrPFoC1QFtQ59kCsA5oD+o8WwA2AJeDOs8WgE1AZ1Dn2QKwGegK6jxbALYC3UGdZwvAduBKUOfZArAT+Deo82wB2ANcDeo8WwD2A/8FdZ4tAAeB1qDOswXgMHApqPNsATgKNAd1ni0Ax4ALQZ1nC8AJoCmo82wBOA2cC+o8WwDOAKeDOs8WgHPAyaDOswXgPHA8qPNsAbgIHA3qPFsA2oBDQZ1nC0AHsD+o82wB6AR+9Hee7/gfxUd3k/0fv+QAAAAASUVORK5CYII=" alt="user-circle" width="40" height="40" />
+                
+                <!-- Menú desplegable del usuario -->
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-header">
+                        <div class="user-avatar">
+                            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEBUlEQVR4nO2ZW4hVVRjHf3PmzHgZ8zJeJi+ZF7xAXtLMCEYxghIqpQcfpIcuYvYgWBYVPUWUDypIP1QvUg8JBSYpFCVUVKiVYV4qzcoaL2COl3G8jc7MN7GGfSzPnL332Wefs/eE84fFOey9vrW+/1nfWt9a37eg/+Mw4DZgGXAvsAiYAUwGRgNDgUrgb+AX4CxwDDgIHABOAJ2ZGp8FjAXWAruBdqAn5tcO7ALWACXpGj8QWA58BnSlYbTf1wWUAQ8lMn4I8BzwWwrG+n1ngOXAgFQMHwO8D3RkwXC/rwN4FxgVxfhbgC+z/NbDfMeAW8OMHwSUZ9Fov+8rYGCQ8XcCv+fQeL/vd2BBkPGbcmx8j/e1AZv8xo8FmnNsfI/3NQHj/AaXFoDxPd5X7je4vkCM7/G+On/nZQVkfA/wsd/gugIyvht4w9/5SoEY3w2s8Hd+XSAA3QKs9Hd+WQAAPcAL/s5/MxzQDTzr7zzLAIAu4El/5/kGALQDj/o7P2wAQCMwx995rgEAZ4Dp/s5zDQA4Cdzh7zzXAIB9wGR/57kGAGwHRvg7zzUA4ANgkL/zXAMAXgf6+TvPNQDgRaBfUOe5BLAaGBDUea4ArAKGBHWeKwDLgWFBnecCwGJgRFDnuQAwD7g+qPNsA5gNTArqPNsApgJTgjrPJoBJwIygzrMJYDIwM6jzbAEYD8wO6jxbAMYA9wR1ni0Ao4B7gzrPFoDhwANBnWcLwBDgoaDOswVgELA4qPNsARgAPBzUebYA9AceCeo8WwD6AUuCOs8WgL7AY0GdZwtAKfB4UOfZAlACPBHUebYAlABPBXWeLQAlwDNBnWcLQAnwXFDn2QJQArwY1Hm2AJQArwR1ni0AJcCbQZ1nC0AJ8E5Q59kCUAK8F9R5tgCUAB8GdZ4tACXAx0GdZwtAP+CToM6zBWAg8FlQ59kCMAT4IqjzbAEYAXwZ1Hm2AIwBdgR1ni0AE4FdQZ1nC8BM4OugzrMFYB6wN6jzbAG4H/g+qPNsAVgEHAnqPFsAlgDHgzrPFoBlwKmgzrMF4FngXFDn2QKwCrgQ1Hm2ALwEXAzqPFsA1gCXgjrPFoC1QFtQ59kCsA5oD+o8WwA2AJeDOs8WgE1AZ1Dn2QKwGegK6jxbALYC3UGdZwvAduBKUOfZArAT+Deo82wB2ANcDeo8WwD2A/8FdZ4tAAeB1qDOswXgMHApqPNsATgKNAd1ni0Ax4ALQZ1nC8AJoCmo82wBOA2cC+o8WwDOAKeDOs8WgHPAyaDOswXgPHA8qPNsAbgIHA3qPFsA2oBDQZ1nC0AHsD+o82wB6AR+9Hee7/gfxUd3k/0fv+QAAAAASUVORK5CYII=" alt="user-avatar" width="50" height="50">
+                        </div>
+                        <div class="user-name">Usuario</div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="actualizar-datos.html" class="dropdown-item">
+                        <div class="item-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="16" rx="2" />
+                                <path d="M16 2v4" />
+                                <path d="M8 2v4" />
+                                <path d="M3 10h18" />
+                                <path d="M8 14h.01" />
+                                <path d="M12 14h.01" />
+                                <path d="M16 14h.01" />
+                                <path d="M8 18h.01" />
+                                <path d="M12 18h.01" />
+                                <path d="M16 18h.01" />
+                            </svg>
+                        </div>
+                        <div class="item-text">Actualizar datos</div>
+                    </a>
+                    <a href="index.html" class="dropdown-item">
+                        <div class="item-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                        </div>
+                        <div class="item-text">Cerrar Sesión</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="update-container">
+            <h1 class="update-title">Actualizar Datos Personales</h1>
+            
+            <div class="profile-section">
+                <div class="photo-upload-section">
+                    <div class="profile-photo">
+                        <img id="profileImage" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEBUlEQVR4nO2ZW4hVVRjHf3PmzHgZ8zJeJi+ZF7xAXtLMCEYxghIqpQcfpIcuYvYgWBYVPUWUDypIP1QvUg8JBSYpFCVUVKiVYV4qzcoaL2COl3G8jc7MN7GGfSzPnL332Wefs/eE84fFOey9vrW+/1nfWt9a37eg/+Mw4DZgGXAvsAiYAUwGRgNDgUrgb+AX4CxwDDgIHABOAJ2ZGp8FjAXWAruBdqAn5tcO7ALWACXpGj8QWA58BnSlYbTf1wWUAQ8lMn4I8BzwWwrG+n1ngOXAgFQMHwO8D3RkwXC/rwN4FxgVxfhbgC+z/NbDfMeAW8OMHwSUZ9Fov+8rYGCQ8XcCv+fQeL/vd2BBkPGbcmx8j/e1AZv8xo8FmnNsfI/3NQHj/AaXFoDxPd5X7je4vkCM7/G+On/nZQVkfA/wsd/gugIyvht4w9/5SoEY3w2s8Hd+XSAA3QKs9Hd+WQAAPcAL/s5/MxzQDTzr7zzLAIAu4El/5/kGALQDj/o7P2wAQCMwx995rgEAZ4Dp/s5zDQA4Cdzh7zzXAIB9wGR/57kGAGwHRvg7zzUA4ANgkL/zXAMAXgf6+TvPNQDgRaBfUOe5BLAaGBDUea4ArAKGBHWeKwDLgWFBnecCwGJgRFDnuQAwD7g+qPNsA5gNTArqPNsApgJTgjrPJoBJwIygzrMJYDIwM6jzbAEYD8wO6jxbAMYA9wR1ni0Ao4B7gzrPFoDhwANBnWcLwBDgoaDOswVgELA4qPNsARgAPBzUebYA9AceCeo8WwD6AUuCOs8WgL7AY0GdZwtAKfB4UOfZAlACPBHUebYAlABPBXWeLQAlwDNBnWcLQAnwXFDn2QJQArwY1Hm2AJQArwR1ni0AJcCbQZ1nC0AJ8E5Q59kCUAK8F9R5tgCUAB8GdZ4tACXAx0GdZwtAP+CToM6zBWAg8FlQ59kCMAT4IqjzbAEYAXwZ1Hm2AIwBdgR1ni0AE4FdQZ1nC8BM4OugzrMFYB6wN6jzbAG4H/g+qPNsAVgEHAnqPFsAlgDHgzrPFoBlwKmgzrMF4FngXFDn2QKwCrgQ1Hm2ALwEXAzqPFsA1gCXgjrPFoC1QFtQ59kCsA5oD+o8WwA2AJeDOs8WgE1AZ1Dn2QKwGegK6jxbALYC3UGdZwvAduBKUOfZArAT+Deo82wB2ANcDeo8WwD2A/8FdZ4tAAeB1qDOswXgMHApqPNsATgKNAd1ni0Ax4ALQZ1nC8AJoCmo82wBOA2cC+o8WwDOAKeDOs8WgHPAyaDOswXgPHA8qPNsAbgIHA3qPFsA2oBDQZ1nC0AHsD+o82wB6AR+9Hee7/gfxUd3k/0fv+QAAAAASUVORK5CYII=" alt="Foto de perfil">
+                    </div>
+                    <div class="photo-upload-controls">
+                        <label for="photoUpload" class="upload-btn">Cambiar Foto</label>
+                        <input type="file" id="photoUpload" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+
+                <form class="update-form">
+                    <div class="form-group">
+                        <label for="nombre">Nombre</label>
+                        <input type="text" id="nombre" name="nombre" placeholder="Tu nombre" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="apellidos">Apellidos</label>
+                        <input type="text" id="apellidos" name="apellidos" placeholder="Tus apellidos" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="institucion">Institución</label>
+                        <input type="text" id="institucion" name="institucion" placeholder="Tu institución">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="grado-estudios">Grado de Estudios</label>
+                        <select id="grado-estudios" name="grado-estudios" required>
+                            <option value="" disabled selected>Selecciona tu grado de estudios</option>
+                            <option value="bachillerato">Bachillerato</option>
+                            <option value="licenciatura">Licenciatura</option>
+                            <option value="maestria">Maestría</option>
+                            <option value="doctorado">Doctorado</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="perfil-profesional">Perfil Profesional</label>
+                        <textarea id="perfil-profesional" name="perfil-profesional" placeholder="Describe brevemente tu perfil profesional" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="experiencia">Experiencia Laboral</label>
+                        <textarea id="experiencia" name="experiencia" placeholder="Describe tu experiencia laboral" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="habilidades">Habilidades</label>
+                        <textarea id="habilidades" name="habilidades" placeholder="Lista tus habilidades profesionales" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="password-toggle-container">
+                        <button type="button" id="togglePassword" class="toggle-password-btn">Cambiar Contraseña</button>
+                    </div>
+                    
+                    <div id="password-section" class="password-section hidden">
+                        <div class="form-group">
+                            <label for="password">Contraseña Actual</label>
+                            <input type="password" id="password" name="password" placeholder="Contraseña actual">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="new-password">Nueva Contraseña</label>
+                            <input type="password" id="new-password" name="new-password" placeholder="Nueva contraseña">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm-password">Confirmar Nueva Contraseña</label>
+                            <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirmar nueva contraseña">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="save-btn">Guardar Cambios</button>
+                        <a href="Inicio.html" class="cancel-btn">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Asegúrate de que los scripts se carguen correctamente -->
+    <script src="js/inicio.js"></script>
+    <script src="js/actualizar.js"></script>
+</body>
+</html>
