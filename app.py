@@ -45,6 +45,8 @@ app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 app.config['SIIAU_WSDL_URL'] = os.environ.get('SIIAU_WSDL_URL')
 app.config['SIIAU_VALIDA_KEY'] = os.environ.get('SIIAU_VALIDA_KEY')
 
+app.config['ITEMS_PER_PAGE'] = 30 
+
 # --- 2. Initialize Extensions that NEED config (like DB) ---
 db.init_app(app) 
 
@@ -1324,6 +1326,43 @@ def move_folder(folder_id):
         user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
         return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
     # ------------------------------------------------------------------------------------------
+
+
+# --- Activity Log Viewing Route ---
+@app.route('/activity_log')
+@login_required
+def activity_log():
+    # --- Import model needed ---
+    from models import ActividadUsuario
+    # --------------------------
+    
+    user_id = session.get('user_id')
+    if not user_id: # Should be caught by decorator, but defensive check
+        flash('User session error.', 'danger')
+        return redirect(url_for('login'))
+
+    # Get page number from query args, default to 1, type integer
+    page = request.args.get('page', 1, type=int)
+    
+    try:
+        # Query logs for the current user, ordered by date descending
+        # Use paginate instead of .all()
+        log_pagination = ActividadUsuario.query.filter_by(id_usuario=user_id)\
+            .order_by(ActividadUsuario.fecha.desc())\
+            .paginate(
+                page=page, 
+                per_page=app.config['ITEMS_PER_PAGE'], 
+                error_out=False # If page out of range, show empty list instead of 404
+            )
+            
+    except Exception as e:
+        db.session.rollback() # Good practice in case of query issues
+        print(f"Database query error in activity_log: {e}")
+        flash('Error retrieving activity log.', 'danger')
+        log_pagination = None # Set to None on error
+
+    # Pass the pagination object to the template
+    return render_template('activity_log.html', log_pagination=log_pagination)
 
 # --- Error Handlers ---
 @app.errorhandler(413)
