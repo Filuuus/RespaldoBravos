@@ -147,3 +147,24 @@
       flex-direction: column;
     }
   }
+
+  .password-toggle-icon {
+    position: absolute;
+    top: 50%; /* Position vertically centered */
+    right: 1rem; /* Adjust horizontal position from right */
+    transform: translateY(-50%); /* Fine-tune vertical centering */
+    cursor: pointer;
+    z-index: 3; /* Ensure icon is above the input field/label */
+    color: #6c757d; /* Optional: Set icon color (e.g., secondary grey) */
+  }
+  
+  /* Optional: Change color on hover */
+  .password-toggle-icon:hover {
+    color: #adb5bd; 
+  }
+  
+  /* Ensure input padding is sufficient (pe-5 from Bootstrap should do this, 
+     but you could add it manually if needed) */
+  #nip {
+    padding-right: 3rem; /* Example manual padding if pe-5 isn't enough */
+  } 
