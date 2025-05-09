@@ -1,0 +1,195 @@
+body {
+    background-color: #f0f2f5; 
+}
+
+.drive-header {
+    background-color: #ffffff;
+    padding: 10px 20px;
+    border-bottom: 1px solid #dadce0;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+}
+
+.drive-sidebar {
+    background-color: #f8f9fa;
+    padding: 15px;
+    width: 250px; /* Default width */
+    min-height: calc(100vh - 60px);
+    transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, transform 0.3s ease-in-out; 
+}
+
+.drive-sidebar.collapsed {
+    width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    overflow: hidden;
+}
+
+/* .drive-sidebar:not(.open) { 
+    transform: translateX(-100%);
+} */
+
+.drive-main-content {
+    padding: 20px;
+    flex-grow: 1; 
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.drive-main-content.sidebar-collapsed {
+    /* margin-left: 0; /* If sidebar was pushing content */
+}
+
+
+.drive-container {
+    display: flex;
+    flex-direction: column; 
+}
+.drive-body-flex-row { 
+     display: flex;
+     flex-direction: row;
+}
+
+.drive-header .burger { /* Assuming this is your burger menu container */
+    flex-shrink: 0; /* Don't let it shrink */
+}
+
+.drive-header .global-search-bar {
+    flex-grow: 1; /* Allow this container to grow */
+    display: flex; /* To center the form within it */
+    justify-content: center; /* Center the form */
+}
+
+.drive-header .global-search-bar .form {
+    flex-grow: 0; 
+    max-width: 720px;
+    margin: 0 auto; 
+    background-color: #f1f3f4; 
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+.drive-header .global-search-bar .form:focus-within {
+    background-color: #fff;
+    border: 1px solid #dadce0;
+    box-shadow: 0 1px 1px 0 rgba(65,69,73,.3), 0 1px 3px 1px rgba(65,69,73,.15);
+}
+.drive-header .global-search-bar .input {
+    background-color: transparent;
+    color: #5f6368; 
+}
+
+.drive-header .user-menu {
+    flex-shrink: 0; /* Don't let it shrink */
+}
+
+.drive-sidebar .upload-button-container a.btn {
+    box-shadow: 0 1px 2px 0 rgba(60,64,67,.302), 0 1px 3px 1px rgba(60,64,67,.149);
+    border-radius: 24px; 
+    padding: 12px 24px; 
+    font-weight: 500;
+}
+
+.drive-sidebar nav ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+.drive-sidebar nav li a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #3c4043; 
+    border-radius: 0 25px 25px 0; 
+}
+.drive-sidebar nav li a:hover {
+    background-color: #e8f0fe; 
+}
+.drive-sidebar nav li a.active { 
+    background-color: #d2e3fc;
+    font-weight: bold;
+}
+
+/* Example ideas for drive_styles.css */
+.drive-main-content .table td,
+.drive-main-content .table th {
+    padding: 12px 15px; /* More padding */
+    vertical-align: middle;
+    font-weight: 500; /* Lighter font weight */
+    color: #5f6368; /* Greyish text */
+    border-bottom-width: 1px; /* Thinner border */
+    border-top: 1px solid #e0e0e0; /* Lighter border */
+    border-left: none;
+    border-right: none;
+}
+.drive-main-content .table thead th {
+    border-bottom: 1px solid #c0c0c0; /* Slightly more distinct for header bottom */
+}
+.drive-main-content .table tbody tr:hover {
+    background-color: #f1f3f4; /* Subtle hover */
+}
+.drive-main-content .table .action-btn {
+    margin-right: 5px;
+}
+
+/* Copy this block from styles_Inicio.css into your drive_styles.css */
+.burger {
+  position: relative;
+  width: 34px;
+  height: 25px;
+  background: transparent;
+  cursor: pointer;
+  display: block; /* Or inline-block, adjust as needed for layout */
+  margin-right: 15px; /* Add some margin if it's too close to other elements */
+}
+
+.burger input {
+  display: none;
+}
+
+.burger span {
+  display: block;
+  position: absolute;
+  height: 3px;         /* Height of each line */
+  width: 100%;         /* Lines take full width of .burger container */
+  background: #5f6368; /* CHANGED: A darker color for visibility on a white header */
+                       /* Original was #c4a14b, ensure this new color is visible */
+  border-radius: 9px;
+  opacity: 1;
+  left: 0;
+  transform: rotate(0deg);
+  transition: 0.25s ease-in-out;
+}
+
+.burger span:nth-of-type(1) {
+  top: 0px;
+  transform-origin: left center;
+}
+
+.burger span:nth-of-type(2) {
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: left center;
+}
+
+.burger span:nth-of-type(3) {
+  top: 100%;
+  transform-origin: left center;
+  transform: translateY(-100%); /* Adjusted for crisp bottom alignment */
+}
+
+/* Animation when checkbox is checked (input is active) */
+.burger input:checked ~ span:nth-of-type(1) {
+  top: 0px; /* Adjust if needed based on final height/transforms */
+  left: 4px; /* Adjust as needed */
+  transform: rotate(45deg);
+}
+
+.burger input:checked ~ span:nth-of-type(2) {
+  width: 0%;
+  opacity: 0;
+}
+
+.burger input:checked ~ span:nth-of-type(3) {
+  top: calc(100% - 3px); /* Adjust if needed for 'X' alignment */
+  left: 4px; /* Adjust as needed */
+  transform: rotate(-45deg);
+}
