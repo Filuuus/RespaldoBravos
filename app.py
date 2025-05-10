@@ -593,7 +593,8 @@ def list_files(folder_id):
 
     # Render the template
     return render_template(
-        'file_list.html',
+        # 'file_list.html',
+        'drive_home.html',
         folders=sub_folders,
         documents=documents_in_folder,
         current_folder_id=folder_id,
