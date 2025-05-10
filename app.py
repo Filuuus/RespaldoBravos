@@ -26,6 +26,7 @@ from models import Usuario # Import User model where needed
 from datetime import datetime, timezone # Add timezone here
 
 from flask import current_app
+from sqlalchemy import or_
 
 load_dotenv() 
 
@@ -1432,6 +1433,54 @@ def activity_log():
     # Pass the pagination object to the template
     return render_template('activity_log.html', log_pagination=log_pagination)
 
+# --- Global search Route ---
+
+@app.route('/search', methods=['GET'])
+@login_required
+
+def global_search_route():
+    from models import Documento, Carpeta, Usuario
+    user_id = session.get('user_id')
+    search_term = request.args.get('q_global', '').strip() 
+
+    found_documents = []
+    found_folders = []
+
+    if search_term:
+        search_like = f"%{search_term}%"
+
+        # Query documents across all user's folders
+        found_documents = Documento.query.filter(
+            Documento.id_usuario == user_id,
+            or_(
+                Documento.titulo_original.ilike(search_like),
+                Documento.descripcion.ilike(search_like)
+                # Add other fields to search in documents if desired
+            )
+        ).all()
+
+        # Query folders across all user's folders (root and sub-folders)
+        found_folders = Carpeta.query.filter(
+            Carpeta.id_usuario == user_id,
+            Carpeta.nombre.ilike(search_like)
+        ).all()
+
+        log_activity(
+            user_id=user_id,
+            activity_type='GLOBAL_SEARCH',
+            ip_address=request.remote_addr,
+            details=f"Searched for: '{search_term}'. Found {len(found_documents)} docs, {len(found_folders)} folders."
+        )
+
+    
+    return render_template(
+        'search_results.html',
+        search_term=search_term,
+        documents=found_documents,
+        folders=found_folders,
+        current_page='search_results' 
+    )
+
 # --- Error Handlers ---
 @app.errorhandler(413)
 @app.errorhandler(RequestEntityTooLarge)
@@ -1447,3 +1496,5 @@ def handle_file_too_large(e):
 # --- Main entry point ---
 if __name__ == '__main__':
     app.run(debug=app.config['DEBUG'])
+
+    

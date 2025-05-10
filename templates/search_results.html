@@ -1,0 +1,83 @@
+{# RespaldoBravos/templates/search_results.html #}
+{% extends "base_drive_layout.html" %}
+
+{% block title %}Search Results for "{{ search_term }}"{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <h1 class="h3 mb-3">Search Results for "<em>{{ search_term }}</em>"</h1>
+
+    {% if not documents and not folders %}
+        <div class="alert alert-info" role="alert">
+            No results found for "<strong>{{ search_term }}</strong>".
+        </div>
+    {% else %}
+        {# Display Folders Found #}
+        {% if folders %}
+            <h4 class="mt-4">Folders</h4>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Date Modified</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for folder in folders %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-folder-fill me-2" style="color: #ffcc00;"></i>
+                            <a href="{{ url_for('list_files', folder_id=folder.id_carpeta) }}">{{ folder.nombre }}</a>
+                        </td>
+                        <td>{{ folder.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if folder.fecha_modificacion else 'N/A' }}</td>
+                        <td>
+                            <a href="{{ url_for('rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Rename</a>
+                            <a href="{{ url_for('move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Move</a>
+                            {# Delete might be too aggressive for search results, consider carefully #}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {# Display Documents Found #}
+        {% if documents %}
+            <h4 class="mt-4">Files</h4>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Date Uploaded</th>
+                        <th>Size</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-file-earmark-text-fill me-2" style="color: #6c757d;"></i>
+                            {{ doc.titulo_original }}
+                            {% if doc.favorito %}<span class="badge bg-warning text-dark ms-1">Fav</span>{% endif %}
+                        </td>
+                        <td>{{ doc.categoria.nombre if doc.categoria else 'File' }}</td>
+                        <td>{{ doc.fecha_carga.strftime('%Y-%m-%d %H:%M') if doc.fecha_carga else 'N/A' }}</td>
+                        <td>{{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}</td>
+                        <td>
+                            <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-info action-btn">Download</a>
+                            <a href="{{ url_for('edit_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-warning action-btn">Edit</a>
+                            <a href="{{ url_for('move_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-secondary action-btn">Move</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    {% endif %}
+    <hr>
+    <a href="{{ url_for('list_files') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to My Files</a>
+</div>
+{% endblock %}
