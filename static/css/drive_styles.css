@@ -14,16 +14,17 @@ body {
 .drive-sidebar {
     background-color: #f8f9fa;
     padding: 15px;
-    width: 250px; /* Default width */
+    width: 250px;        
     min-height: calc(100vh - 60px);
-    transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, transform 0.3s ease-in-out; 
+    transform: translateX(0); 
+    margin-left: 0;        
+    transition: transform 0.3s ease-in-out, margin-left 0.3s ease-in-out; 
+    flex-shrink: 0;      
 }
 
 .drive-sidebar.collapsed {
-    width: 0;
-    padding-left: 0;
-    padding-right: 0;
-    overflow: hidden;
+    transform: translateX(-100%); /* Slide out of view */
+    margin-left: -250px;         /* Pull it out of the layout flow by its own width */
 }
 
 /* .drive-sidebar:not(.open) { 
@@ -32,8 +33,8 @@ body {
 
 .drive-main-content {
     padding: 20px;
-    flex-grow: 1; 
-    transition: margin-left 0.3s ease-in-out;
+    flex-grow: 1;
+
 }
 
 .drive-main-content.sidebar-collapsed {
@@ -45,10 +46,13 @@ body {
     display: flex;
     flex-direction: column; 
 }
-.drive-body-flex-row { 
+
+.drive-body-flex-row {
      display: flex;
      flex-direction: row;
+     overflow-x: hidden; 
 }
+
 
 .drive-header .burger { /* Assuming this is your burger menu container */
     flex-shrink: 0; /* Don't let it shrink */
