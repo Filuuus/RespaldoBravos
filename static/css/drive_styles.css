@@ -37,9 +37,10 @@ body {
 
 }
 
+/* If sidebar was pushing content
 .drive-main-content.sidebar-collapsed {
-    /* margin-left: 0; /* If sidebar was pushing content */
-}
+    margin-left: 0; 
+} */
 
 
 .drive-container {

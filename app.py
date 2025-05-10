@@ -25,6 +25,8 @@ from zeep.exceptions import Fault # Import specific Zeep exception
 from models import Usuario # Import User model where needed
 from datetime import datetime, timezone # Add timezone here
 
+from flask import current_app
+
 load_dotenv() 
 
 # Initialize Flask app
@@ -265,6 +267,71 @@ def login():
         # Pass current year to template for optional footer display
         current_year = datetime.now(timezone.utc).year 
         return render_template('login.html', now={'year': current_year})
+
+
+@app.route('/dev_login')
+def dev_login():
+    # IMPORTANT: Only allow this route in debug/development mode for security
+    if not current_app.debug: # current_app.debug directly uses app.config['DEBUG']
+        flash('This login method is only available in development mode.', 'danger')
+        return redirect(url_for('login')) # Redirect to normal login
+
+    DEFAULT_USER_CODIGO = "DEV_USER"  # Or any code you prefer
+    DEFAULT_USER_NAME = "Developer Teammate"
+    DEFAULT_USER_TIPO = "E" # Example: 'E' for Estudiante, adjust as needed
+    DEFAULT_USER_PLANTEL = "CUCEI_DEV" # Example
+    DEFAULT_USER_SECCION = "DEV_SECTION" # Example
+
+    # Try to find the default user
+    dev_user = Usuario.query.filter_by(codigo_usuario=DEFAULT_USER_CODIGO).first()
+
+    if not dev_user:
+        # If default user doesn't exist, create them
+        print(f"Creating default development user: {DEFAULT_USER_CODIGO}")
+        dev_user = Usuario(
+            codigo_usuario=DEFAULT_USER_CODIGO,
+            nombre_completo=DEFAULT_USER_NAME,
+            tipo_usuario=DEFAULT_USER_TIPO,
+            plantel=DEFAULT_USER_PLANTEL,
+            seccion=DEFAULT_USER_SECCION,
+            # fecha_registro will be set by default
+            ultimo_login=datetime.now(timezone.utc) # Set last login
+        )
+        db.session.add(dev_user)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating dev user: {e}', 'danger')
+            return redirect(url_for('login'))
+    else:
+        # Update last login if user already exists
+        dev_user.ultimo_login = datetime.now(timezone.utc)
+        dev_user.is_active = True # Ensure user is active
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating dev user login time: {e}', 'danger')
+            return redirect(url_for('login'))
+
+
+    # Log the user in by setting the session
+    session['user_id'] = dev_user.id_usuario
+    session.permanent = True  # Make session last longer
+
+    flash(f'Successfully logged in as default user: {dev_user.nombre_completo}', 'success')
+
+    # Log this special login activity
+    log_activity(
+        user_id=dev_user.id_usuario,
+        activity_type='DEV_LOGIN_SUCCESS',
+        ip_address=request.remote_addr, # request should be available here
+        details=f"Logged in via /dev_login route as {DEFAULT_USER_CODIGO}"
+    )
+
+    return redirect(url_for('list_files')) # Or your main dashboard/file list route
+
 
 # --- Update Logout ---
 @app.route('/logout')
