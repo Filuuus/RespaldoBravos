@@ -277,11 +277,11 @@ def dev_login():
         flash('This login method is only available in development mode.', 'danger')
         return redirect(url_for('login')) # Redirect to normal login
 
-    DEFAULT_USER_CODIGO = "DEV_USER"  # Or any code you prefer
+    DEFAULT_USER_CODIGO = "DEV_USER"
     DEFAULT_USER_NAME = "Developer Teammate"
-    DEFAULT_USER_TIPO = "E" # Example: 'E' for Estudiante, adjust as needed
-    DEFAULT_USER_PLANTEL = "CUCEI_DEV" # Example
-    DEFAULT_USER_SECCION = "DEV_SECTION" # Example
+    DEFAULT_USER_TIPO = "E"
+    DEFAULT_USER_PLANTEL = "CUALTOS_DEV" 
+    DEFAULT_USER_SECCION = "DEVELOPER" 
 
     # Try to find the default user
     dev_user = Usuario.query.filter_by(codigo_usuario=DEFAULT_USER_CODIGO).first()
@@ -1480,6 +1480,18 @@ def global_search_route():
         folders=found_folders,
         current_page='search_results' 
     )
+
+# --- Context processor ---
+
+@app.context_processor
+def inject_current_user():
+    from flask import Flask, render_template, request, redirect, url_for, flash, session, current_app
+    from models import Usuario, Documento, Carpeta
+    user_id = session.get('user_id')
+    if user_id:
+        user = Usuario.query.get(user_id) # Fetch user object from DB using ID in session
+        return dict(current_user=user)
+    return dict(current_user=None) # No user in session
 
 # --- Error Handlers ---
 @app.errorhandler(413)

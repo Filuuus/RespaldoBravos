@@ -30,11 +30,38 @@
                 </form>
             </div>
 
-            {# User menu/icon - Adapted from file_list.html or Inicio.html #}
-            <div class="user-menu">
+            <div class="user-menu-container"> {# Renamed for clarity, matches styles_Inicio.css concept #}
                 {% if session.user_id %}
-                    {# User icon, dropdown for settings, logout etc. #}
-                    <span>Welcome!</span> <a href="{{ url_for('logout') }}" class="btn btn-sm btn-secondary">Logout</a>
+                    <i id="profileMenuIcon" class="bi bi-person-circle profile-icon" style="font-size: 2rem; cursor: pointer; color: #5f6368;"></i>                    {# Replace 'default_avatar.png' with an actual placeholder image in your static/img folder, or use user-specific one if available #}
+
+                    <div class="profile-dropdown" id="profileDropdownMenu"> {# Renamed for clarity #}
+                        <div class="dropdown-header">
+                            {% if current_user %}  {# Check if current_user object exists #}
+                                <div class="user-name" title="{{ current_user.nombre_completo }}">
+                                    {{ current_user.nombre_completo }}
+                                </div>
+                                <div class="user-email"> {# Assuming 'codigo_usuario' is the university code #}
+                                    {{ current_user.codigo_usuario }}
+                                </div>
+                            {% else %}
+                                <div class="user-name">Guest</div>
+                            {% endif %}
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item"> {# TODO: Link to actual profile page later #}
+                            <i class="bi bi-person-circle me-2"></i>Profile
+                        </a>
+                        <a href="{{ url_for('activity_log') }}" class="dropdown-item">
+                            <i class="bi bi-list-check me-2"></i>Activity
+                        </a>
+                        <a href="#" class="dropdown-item"> {# Placeholder for settings #}
+                            <i class="bi bi-gear-fill me-2"></i>Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('logout') }}" class="dropdown-item">
+                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                        </a>
+                    </div>
                 {% else %}
                     <a href="{{ url_for('login') }}" class="btn btn-sm btn-primary">Login</a>
                 {% endif %}
