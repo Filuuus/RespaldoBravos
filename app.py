@@ -27,6 +27,7 @@ from datetime import datetime, timezone # Add timezone here
 
 from flask import current_app
 from sqlalchemy import or_
+from flask import jsonify
 
 load_dotenv() 
 
@@ -1480,6 +1481,33 @@ def global_search_route():
         folders=found_folders,
         current_page='search_results' 
     )
+
+
+#--- Get categories route jsonify ---
+ 
+@app.route('/api/get_categories')
+def get_categories_api():
+    from models import Categoria
+    try:
+        categories = Categoria.query.order_by(Categoria.nombre).all()
+        return jsonify([{'id': cat.id_categoria, 'name': cat.nombre} for cat in categories])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+#--- Get folders route jsonify ---
+
+@app.route('/api/get_user_folders')
+@login_required
+def get_user_folders_api():
+    from models import Carpeta
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
+    try:
+        folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+        return jsonify([{'id': f.id_carpeta, 'name': f.nombre} for f in folders])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # --- Context processor ---
 

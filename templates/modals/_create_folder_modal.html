@@ -1,0 +1,19 @@
+<div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createFolderModalLabel">Create New Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_folder', parent_folder_id=current_folder_id if current_folder_id is not none else None) }}" id="createFolderFormInModal">
+                <div class="modal-body">
+                    <input type="hidden" name="parent_folder_id_js" id="modalCreateFolderParentId"> <input type="text" name="folder_name" class="form-control" placeholder="Folder name" required autofocus>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Folder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
