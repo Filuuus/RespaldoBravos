@@ -1,0 +1,131 @@
+/* .dark_mode:
+    --dark-bg: #1c1c1c;
+    --darker-bg: #121212; 
+    --principal_bg: #1a1a1a;
+    --lighter-bg: #2c2c2c;
+    --primary-gold: #c4a14b;
+    --primary-gold-light: #d5b25c;
+    --primary-gold-dark: #a8893a;
+*/
+
+:root {
+  --dark-bg: #1c1c1c;
+  --darker-bg: #121212;
+  --principal_bg: #1a1a1a;
+  --lighter-bg: #2c2c2c;
+  --primary-gold: #c4a14b;
+  --primary-gold-light: #d5b25c;
+  --primary-gold-dark: #a8893a;
+}
+
+/* .light_mode{
+    --dark-bg: #1c1c1c;
+  --darker-bg: #e0e0e0;
+  --principal_bg: #f0f0f0;
+  --lighter-bg: #eee;
+  --primary-gold: #c4a14b;
+  --primary-gold-light: #d5b25c;
+  --primary-gold-dark: #a8893a;
+} */
+.container_papelera {
+  display: flex;
+  padding: 20px;
+  gap: 30px;
+  margin: 70px 15px 0px;
+}
+
+.panel {
+  background-color: var(--lighter-bg);
+  border: 3px groove var(--primary-gold);
+  border-radius: 15px;
+  padding: 20px;
+  width: 70%;
+}
+
+.panel h2 {
+  color: var(--primary-gold-light);
+  margin-bottom: 20px;
+}
+
+.header_,
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--primary-gold-dark);
+}
+
+.file-item {
+  border-radius: 15px;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: var(--darker-bg);
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.file-info svg {
+  fill: var(--primary-gold-dark);
+  height: 25px;
+  width: 25px;
+}
+.file-info img {
+  width: 30px;
+}
+
+.details {
+  display: flex;
+  gap: 50px;
+}
+
+.aside {
+  padding: 20px;
+  margin: 10px;
+  width: 25%;
+  text-align: center;
+  height: 78vh;
+  align-content: center;
+}
+
+.aside p {
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  color: #888;
+}
+.aside svg {
+  fill: var(--primary-gold-dark);
+  margin-bottom: 20px;
+}
+.aside g{
+    fill: var(--primary-gold-dark);
+}
+
+.btn {
+  background-color: var(--primary-gold);
+  color: #000;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn:hover {
+  background-color: var(--primary-gold-light);
+}
+
+.vaciar-btn {
+  margin-top: 20px;
+  background-color: var(--primary-gold);
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.vaciar-btn:hover {
+  background-color: var(--primary-gold-light);
+}
