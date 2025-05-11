@@ -60,6 +60,7 @@ body {
     flex-shrink: 0; 
 }
 
+    /* Search bar */
 .drive-header .global-search-bar {
     flex-grow: 1; 
     display: flex; 
@@ -67,21 +68,55 @@ body {
 }
 
 .drive-header .global-search-bar .form {
+    display: flex; 
+    align-items: center;
     flex-grow: 0; 
-    max-width: 720px;
+    width: 100%; 
+    max-width: 720px; 
     margin: 0 auto; 
     background-color: #f1f3f4; 
-    border-radius: 8px;
+    border-radius: 24px; 
     border: 1px solid transparent;
+    padding: 10px 16px;
 }
+
 .drive-header .global-search-bar .form:focus-within {
     background-color: #fff;
-    border: 1px solid #dadce0;
-    box-shadow: 0 1px 1px 0 rgba(65,69,73,.3), 0 1px 3px 1px rgba(65,69,73,.15);
+    border-color: #d1e3ff; /* Lighter blue or just #dadce0 */
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 2px 6px 2px rgba(0,0,0,0.06); /* Softer, more modern shadow */
 }
+
 .drive-header .global-search-bar .input {
     background-color: transparent;
-    color: #5f6368; 
+    color: #3c4043; 
+    border: none;
+    outline: none;
+    flex-grow: 1; 
+    margin: 0;
+    padding: 0; 
+    font-size: 1rem; 
+    width: 100%; 
+}
+
+.drive-header .global-search-bar .input::placeholder {
+    color: #5f6368;
+    opacity: 1; 
+}
+
+.drive-header .global-search-bar .form button {
+    background: none;
+    border: none;
+    padding: 0 8px 0 0; /* Adjust padding: No padding on left if it's the first item */
+    margin: 0;
+    display: flex;
+    align-items: center;
+    color: #5f6368; /* Icon color (good) */
+    cursor: pointer;
+}
+
+.drive-header .global-search-bar .form button svg {
+    width: 20px; /* Slightly larger icon if needed */
+    height: 20px;
 }
 
 .drive-header .user-menu {
