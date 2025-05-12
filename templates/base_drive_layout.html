@@ -92,18 +92,27 @@
                     </ul>
                 </div>
             </div>
-
+            
             <nav>
                 <ul>
-                    {# Make sure you have an active class logic if needed, passed from your route #}
-                    <li><a href="{{ url_for('list_files') }}" class="{{ 'active' if not current_folder_id and not current_page == 'activity_log' else '' }}">
-                        <i class="bi bi-hdd-stack-fill me-2"></i>My Files
-                    </a></li>
-                    <li><a href="#"><i class="bi bi-clock-history me-2"></i>Recents</a></li> {# Placeholder #}
-                    <li><a href="#"><i class="bi bi-star-fill me-2"></i>Favorites</a></li> {# Placeholder #}
-                    <li><a href="{{ url_for('activity_log') }}" class="{{ 'active' if current_page == 'activity_log' else '' }}">
-                        <i class="bi bi-activity me-2"></i>Activity Log
-                    </a></li>
+                    <li>
+                        <a href="{{ url_for('home_dashboard') }}" class="{{ 'active' if current_page == 'home' else '' }}">
+                            <i class="bi bi-house-door-fill me-2"></i>Home
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('list_files', folder_id=None) }}" class="{{ 'active' if current_page == 'my_files' or (not current_page and not current_folder_id) else '' }}">
+                            <i class="bi bi-hdd-stack-fill me-2"></i>My Files
+                        </a>
+                    </li>
+                    <li><a href="#"><i class="bi bi-people-fill me-2"></i>Shared with me</a></li> {# Placeholder #}
+                    <li><a href="#"><i class="bi bi-clock-history me-2"></i>Recents</a></li> {# Placeholder - distinct from home page recents #}
+                    <li><a href="#"><i class="bi bi-star-fill me-2"></i>Favorites</a></li> {# Placeholder - distinct from home page favorites #}
+                    <li>
+                        <a href="{{ url_for('activity_log') }}" class="{{ 'active' if current_page == 'activity_log' else '' }}">
+                            <i class="bi bi-activity me-2"></i>Activity Log
+                        </a>
+                    </li>
                     <li><a href="#"><i class="bi bi-trash-fill me-2"></i>Trash</a></li> {# Placeholder #}
                 </ul>
             </nav>

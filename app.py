@@ -1,40 +1,27 @@
 import os
 import boto3 
-from flask import Flask
-from dotenv import load_dotenv
-#from flask_sqlalchemy import SQLAlchemy 
-from werkzeug.exceptions import RequestEntityTooLarge
-from sqlalchemy import text 
 import uuid 
-from werkzeug.utils import secure_filename
-# Imports used in routes moved here for clarity
-from flask import render_template, request, redirect, url_for, flash, session 
-from datetime import datetime 
-from functools import wraps 
-import math # Needed for formatting file size
-from flask import send_file
-
+import math
+from datetime import datetime, timezone 
+from dotenv import load_dotenv
 from extensions import db 
+from flask import Flask
+from flask import render_template, request, redirect, url_for, flash, session, current_app, jsonify, send_file
 from flask_migrate import Migrate
-from models import ActividadUsuario
-from flask import request
-from sqlalchemy import asc, desc, text, or_
-
-from zeep import Client, Settings, Transport # Import Zeep classes
-from zeep.exceptions import Fault # Import specific Zeep exception
-from models import Usuario # Import User model where needed
-from datetime import datetime, timezone # Add timezone here
-
-from flask import current_app
-from sqlalchemy import or_
-from flask import jsonify
+from functools import wraps 
+from models import ActividadUsuario, Usuario
+from sqlalchemy import asc, desc, text, or_, text
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.utils import secure_filename
+from zeep import Client, Settings, Transport
+from zeep.exceptions import Fault 
 
 load_dotenv() 
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# --- 1. Load Configuration FIRST ---
+# --- 1. Load Configuration ---
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_fallback_secret_key_for_dev_only') 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///default.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
@@ -98,8 +85,6 @@ except Exception as e:
     siiau_client = None
 # ---------------------------------
 
-
-
 # --- Jinja Custom Filter for File Size ---
 def format_file_size(size_bytes):
     """Converts bytes to KB, MB, GB, etc."""
@@ -121,19 +106,19 @@ app.jinja_env.filters['format_file_size'] = format_file_size
 # from models import Usuario, Documento, Carpeta, Categoria, ActividadUsuario # KEEP THIS COMMENTED OUT
 
 # --- Define Routes ---
-@app.route('/') 
-def hello_world():
-    # This route doesn't need models currently
-    bucket_name = app.config.get('S3_BUCKET', 'Not Set') 
-    try:
-        db.session.execute(text('SELECT 1')) 
-        db_status = "Database Connection OK"
-    except Exception as e:
-        db_status = f"Database Connection Error: {e}"
+# @app.route('/') 
+# def hello_world():
+#     # This route doesn't need models currently
+#     bucket_name = app.config.get('S3_BUCKET', 'Not Set') 
+#     try:
+#         db.session.execute(text('SELECT 1')) 
+#         db_status = "Database Connection OK"
+#     except Exception as e:
+#         db_status = f"Database Connection Error: {e}"
     
-    s3_status = "S3 Client OK" if s3_client else "S3 Client NOT Initialized"
+#     s3_status = "S3 Client OK" if s3_client else "S3 Client NOT Initialized"
     
-    return f'Hello, World! Configured S3 Bucket: {bucket_name}<br>{db_status}<br>{s3_status}'
+#     return f'Hello, World! Configured S3 Bucket: {bucket_name}<br>{db_status}<br>{s3_status}'
 
 
 # --- Simple Login Required Decorator (Placeholder) ---
@@ -671,7 +656,8 @@ def list_files(folder_id):
         breadcrumbs=breadcrumbs,
         sort_by=sort_by,
         sort_dir=sort_dir,
-        search_term=search_term
+        search_term=search_term,
+        current_page='my_files'
     )
 
 
@@ -1517,6 +1503,59 @@ def get_user_folders_api():
         return jsonify([{'id': f.id_carpeta, 'name': f.nombre} for f in folders])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# --- Home route ---
+
+@app.route('/home')
+@login_required # Make sure this decorator is defined and imported
+def home_dashboard():
+    from models import Documento
+    user_id = session.get('user_id')
+    # The check below is good, but @login_required should handle unauthorized access.
+    # If @login_required redirects, this explicit check might be redundant
+    # unless you want a specific flash message here.
+    if not user_id:
+        flash("Please log in to view the home page.", "warning")
+        return redirect(url_for('login')) # Or your actual login route name
+
+    try:
+        # Fetch Favorite Documents
+        favorite_documents = Documento.query.filter_by(
+            id_usuario=user_id,
+            favorito=True
+        ).order_by(
+            Documento.fecha_modificacion.desc()
+        ).limit(10).all()
+
+        # Fetch Recent Documents (based on modification date)
+        recent_documents = Documento.query.filter_by(
+            id_usuario=user_id
+        ).order_by(
+            Documento.fecha_modificacion.desc()
+        ).limit(10).all()
+
+    except Exception as e:
+        print(f"Error fetching documents for home dashboard: {e}")
+        flash("Could not load dashboard information.", "error")
+        favorite_documents = []
+        recent_documents = []
+
+    return render_template(
+        'home_dashboard.html',
+        favorite_documents=favorite_documents,
+        recent_documents=recent_documents,
+        current_page='home', # For sidebar active state
+        current_folder_id=None  # <<< --- THIS LINE IS ADDED/CORRECTED ---
+    )
+
+# --- Base route ---
+@app.route('/')
+@login_required
+def index_redirect():
+    # This route will redirect logged-in users from '/' to '/home'
+    # If not logged in, @login_required will redirect to login page.
+    return redirect(url_for('home_dashboard'))
+
 
 # --- Context processor ---
 

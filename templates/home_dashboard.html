@@ -1,0 +1,107 @@
+{% extends "base_drive_layout.html" %}
+
+{% block title %}Home - My Drive{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <h1 class="h3 mb-4">Home Dashboard</h1>
+
+    {# Favorites Section #}
+    <section class="mb-5">
+        <h4 class="mb-3"><i class="bi bi-star-fill me-2 text-warning"></i>Favorites</h4>
+        {% if favorite_documents %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
+                {% for doc in favorite_documents %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm drive-item-card">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2 fs-4 text-secondary"></i>
+                                <h6 class="card-title mb-0 text-truncate" title="{{ doc.titulo_original }}">
+                                    <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="text-decoration-none stretched-link">{{ doc.titulo_original }}</a>
+                                </h6>
+                            </div>
+                            <p class="card-text text-muted small mb-1">
+                                Modified: {{ doc.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if doc.fecha_modificacion else 'N/A' }}
+                            </p>
+                            <p class="card-text text-muted small">
+                                Size: {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
+                            </p>
+                            {# Add a small actions menu or link to edit page if desired #}
+                            <div class="mt-auto pt-2 text-end">
+                                <a href="{{ url_for('edit_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil-square"></i> Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-light border" role="alert">
+                You haven't marked any files as favorite yet. Star some files to see them here!
+            </div>
+        {% endif %}
+    </section>
+
+    {# Recents Section #}
+    <section>
+        <h4 class="mb-3"><i class="bi bi-clock-history me-2 text-info"></i>Recently Modified</h4>
+        {% if recent_documents %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
+                {% for doc in recent_documents %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm drive-item-card">
+                         <div class="card-body d-flex flex-column">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2 fs-4 text-secondary"></i>
+                                <h6 class="card-title mb-0 text-truncate" title="{{ doc.titulo_original }}">
+                                    <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="text-decoration-none stretched-link">{{ doc.titulo_original }}</a>
+                                </h6>
+                            </div>
+                            <p class="card-text text-muted small mb-1">
+                                Modified: {{ doc.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if doc.fecha_modificacion else 'N/A' }}
+                            </p>
+                             <p class="card-text text-muted small">
+                                Size: {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
+                            </p>
+                            <div class="mt-auto pt-2 text-end">
+                                <a href="{{ url_for('edit_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil-square"></i> Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+             <div class="alert alert-light border" role="alert">
+                No recent documents found. Upload or modify some files!
+            </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Optional: Styles specific to home_dashboard.html cards */
+.drive-item-card .card-title a {
+    color: #212529; /* Ensure link color is standard text color */
+}
+.drive-item-card .card-title a:hover {
+    color: #0d6efd; /* Standard link hover blue */
+    text-decoration: underline;
+}
+.drive-item-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.drive-item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
