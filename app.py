@@ -1437,19 +1437,22 @@ def activity_log():
 # --- Global search Route ---
 
 @app.route('/search', methods=['GET'])
-@login_required
-
+@login_required # Assuming you have this decorator
 def global_search_route():
-    from models import Documento, Carpeta, Usuario
+    from models import Documento, Carpeta
     user_id = session.get('user_id')
-    search_term = request.args.get('q_global', '').strip() 
+    search_term = request.args.get('q_global', '').strip()
 
     found_documents = []
     found_folders = []
 
+    if not user_id: # Should be caught by @login_required, but good practice
+        flash('Please log in to perform a search.', 'warning')
+        return redirect(url_for('login')) # Or your login route name
+
     if search_term:
         search_like = f"%{search_term}%"
-
+        
         # Query documents across all user's folders
         found_documents = Documento.query.filter(
             Documento.id_usuario == user_id,
@@ -1458,29 +1461,35 @@ def global_search_route():
                 Documento.descripcion.ilike(search_like)
                 # Add other fields to search in documents if desired
             )
-        ).all()
+        ).order_by(Documento.fecha_modificacion.desc()).all() # Example ordering
 
         # Query folders across all user's folders (root and sub-folders)
         found_folders = Carpeta.query.filter(
             Carpeta.id_usuario == user_id,
             Carpeta.nombre.ilike(search_like)
-        ).all()
+        ).order_by(Carpeta.nombre).all() # Example ordering
 
+        # It's good practice to log search activity
+        # Assuming log_activity function is defined and imported
         log_activity(
             user_id=user_id,
             activity_type='GLOBAL_SEARCH',
             ip_address=request.remote_addr,
             details=f"Searched for: '{search_term}'. Found {len(found_documents)} docs, {len(found_folders)} folders."
         )
-
     
+    # Pass current_folder_id as None for global search results context
+    # This will allow the _create_folder_modal.html to render without error,
+    # and the url_for will correctly build with parent_folder_id=None (root).
     return render_template(
         'search_results.html',
         search_term=search_term,
         documents=found_documents,
         folders=found_folders,
-        current_page='search_results' 
+        current_folder_id=None,  # <<< --- ADDED THIS LINE ---
+        current_page='search_results' # For highlighting active nav link if needed
     )
+
 
 
 #--- Get categories route jsonify ---
