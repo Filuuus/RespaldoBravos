@@ -1,40 +1,27 @@
 import os
 import boto3 
-from flask import Flask
-from dotenv import load_dotenv
-#from flask_sqlalchemy import SQLAlchemy 
-from werkzeug.exceptions import RequestEntityTooLarge
-from sqlalchemy import text 
 import uuid 
-from werkzeug.utils import secure_filename
-# Imports used in routes moved here for clarity
-from flask import render_template, request, redirect, url_for, flash, session 
-from datetime import datetime 
-from functools import wraps 
-import math # Needed for formatting file size
-from flask import send_file
-
+import math
+from datetime import datetime, timezone 
+from dotenv import load_dotenv
 from extensions import db 
+from flask import Flask
+from flask import render_template, request, redirect, url_for, flash, session, current_app, jsonify, send_file
 from flask_migrate import Migrate
-from models import ActividadUsuario
-from flask import request
-from sqlalchemy import asc, desc, text, or_
-
-from zeep import Client, Settings, Transport # Import Zeep classes
-from zeep.exceptions import Fault # Import specific Zeep exception
-from models import Usuario # Import User model where needed
-from datetime import datetime, timezone # Add timezone here
-
-from flask import current_app
-from sqlalchemy import or_
-from flask import jsonify
+from functools import wraps 
+from models import ActividadUsuario, Usuario
+from sqlalchemy import asc, desc, text, or_, text
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.utils import secure_filename
+from zeep import Client, Settings, Transport
+from zeep.exceptions import Fault 
 
 load_dotenv() 
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# --- 1. Load Configuration FIRST ---
+# --- 1. Load Configuration ---
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_fallback_secret_key_for_dev_only') 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///default.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
@@ -98,8 +85,6 @@ except Exception as e:
     siiau_client = None
 # ---------------------------------
 
-
-
 # --- Jinja Custom Filter for File Size ---
 def format_file_size(size_bytes):
     """Converts bytes to KB, MB, GB, etc."""
@@ -121,19 +106,19 @@ app.jinja_env.filters['format_file_size'] = format_file_size
 # from models import Usuario, Documento, Carpeta, Categoria, ActividadUsuario # KEEP THIS COMMENTED OUT
 
 # --- Define Routes ---
-@app.route('/') 
-def hello_world():
-    # This route doesn't need models currently
-    bucket_name = app.config.get('S3_BUCKET', 'Not Set') 
-    try:
-        db.session.execute(text('SELECT 1')) 
-        db_status = "Database Connection OK"
-    except Exception as e:
-        db_status = f"Database Connection Error: {e}"
+# @app.route('/') 
+# def hello_world():
+#     # This route doesn't need models currently
+#     bucket_name = app.config.get('S3_BUCKET', 'Not Set') 
+#     try:
+#         db.session.execute(text('SELECT 1')) 
+#         db_status = "Database Connection OK"
+#     except Exception as e:
+#         db_status = f"Database Connection Error: {e}"
     
-    s3_status = "S3 Client OK" if s3_client else "S3 Client NOT Initialized"
+#     s3_status = "S3 Client OK" if s3_client else "S3 Client NOT Initialized"
     
-    return f'Hello, World! Configured S3 Bucket: {bucket_name}<br>{db_status}<br>{s3_status}'
+#     return f'Hello, World! Configured S3 Bucket: {bucket_name}<br>{db_status}<br>{s3_status}'
 
 
 # --- Simple Login Required Decorator (Placeholder) ---
@@ -671,7 +656,8 @@ def list_files(folder_id):
         breadcrumbs=breadcrumbs,
         sort_by=sort_by,
         sort_dir=sort_dir,
-        search_term=search_term
+        search_term=search_term,
+        current_page='my_files'
     )
 
 
@@ -827,133 +813,77 @@ def delete_file(doc_id):
 @app.route('/edit/<int:doc_id>', methods=['GET', 'POST'])
 @login_required
 def edit_file(doc_id):
-    # --- Import models needed specifically for this route ---
-    # Import all needed models at the start of the function
-    from models import Documento, Categoria, Carpeta 
-    # --------------------------------------------------------
+    from models import Documento, Categoria, Carpeta # Ensure models are imported
+    from werkzeug.utils import secure_filename # For new title
+    from datetime import datetime # For date parsing
 
     user_id = session.get('user_id')
-    if not user_id:
-        flash('User session error.', 'danger')
-        return redirect(url_for('login'))
+    document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first_or_404()
 
-    # 1. Fetch the document to edit, ensuring ownership
-    # Using first() and checking is fine, first_or_404() is an alternative
-    document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first() 
-    if not document:
-        flash('File not found or access denied.', 'danger')
-        return redirect(url_for('list_files')) 
-
-    # Store parent ID for redirection after POST
-    parent_folder_id = document.id_carpeta 
-
-    # --- Handle POST Request (Save Changes) ---
     if request.method == 'POST':
         try:
-            # Get updated data from the form
-            new_title = request.form.get('titulo_nuevo', default=None)
-            # Handle category - ensure None is stored if "" is submitted
-            id_categoria_str = request.form.get('categoria', default='')
-            id_categoria = int(id_categoria_str) if id_categoria_str.isdigit() else None
+            # Get updated data from the form (FormData sent by JS)
+            new_title_str = request.form.get('titulo_nuevo', '').strip()
+            id_categoria_str = request.form.get('categoria', '')
+            id_carpeta_str = request.form.get('carpeta', '') # This is the folder ID
+            descripcion_str = request.form.get('descripcion', '')
+            periodo_inicio_str = request.form.get('periodo_inicio', '')
+            periodo_fin_str = request.form.get('periodo_fin', '')
+            favorito_str = request.form.get('favorito', 'false') # Checkbox value is 'true' or not present
+
+            # Update Title only if a new one was provided
+            if new_title_str:
+                document.titulo_original = secure_filename(new_title_str)
+
+            # Update category
+            document.id_categoria = int(id_categoria_str) if id_categoria_str.isdigit() else None
             
-            # --- Correctly process folder ID from dropdown ---
-            id_carpeta_str = request.form.get('carpeta', default='') # Get submitted value ("" for root)
-            if id_carpeta_str == '':
-                id_carpeta = None # Root folder selected
-            elif id_carpeta_str.isdigit():
-                id_carpeta_to_check = int(id_carpeta_str)
-                # Validate folder exists and belongs to user
-                folder_check = Carpeta.query.filter_by(id_carpeta=id_carpeta_to_check, id_usuario=user_id).first()
-                if folder_check:
-                    id_carpeta = id_carpeta_to_check # Use the valid ID
-                else:
-                    flash("Invalid folder selected. Keeping original.", "warning")
-                    id_carpeta = document.id_carpeta # Keep original if invalid selection
+            # Update folder
+            if id_carpeta_str == '' or not id_carpeta_str.isdigit(): # Empty string means root
+                document.id_carpeta = None
             else:
-                # Invalid non-digit value submitted? Keep original
-                flash("Invalid folder value submitted. Keeping original.", "warning")
-                id_carpeta = document.id_carpeta 
-            # --------------------------------------------------
+                # Optional: Validate folder exists and belongs to user
+                folder_check = Carpeta.query.filter_by(id_carpeta=int(id_carpeta_str), id_usuario=user_id).first()
+                if folder_check:
+                    document.id_carpeta = int(id_carpeta_str)
+                else:
+                    # Handle case where selected folder is invalid, perhaps keep original or raise error
+                    # For now, we'll allow it but ideally, this is validated by the populated dropdown
+                    document.id_carpeta = int(id_carpeta_str) # Or keep document.id_carpeta
+
+
+            document.descripcion = descripcion_str
+
+            # Parse and update dates
+            document.periodo_inicio = datetime.strptime(periodo_inicio_str, '%Y-%m-%d').date() if periodo_inicio_str else None
+            document.periodo_fin = datetime.strptime(periodo_fin_str, '%Y-%m-%d').date() if periodo_fin_str else None
             
-            descripcion = request.form.get('descripcion', default=None)
-            periodo_inicio_str = request.form.get('periodo_inicio', default=None)
-            periodo_fin_str = request.form.get('periodo_fin', default=None)
-            favorito = 'favorito' in request.form 
+            document.favorito = favorito_str == 'true'
 
-            # Update Title only if a new one was provided and non-empty
-            if new_title and new_title.strip():
-                 # Consider adding validation for title length if needed
-                 document.titulo_original = secure_filename(new_title.strip()) 
+            # Update modification timestamp (SQLAlchemy might do this automatically if onupdate is set)
+            document.fecha_modificacion = datetime.now(timezone.utc)
 
-            # Update other fields
-            document.id_categoria = id_categoria 
-            document.id_carpeta = id_carpeta # Use the validated ID from dropdown logic
-            document.descripcion = descripcion # Allow setting description to empty string if desired
 
-            # Parse and update dates (Allow clearing dates)
-            if periodo_inicio_str is not None: # Check if field was submitted
-                 if periodo_inicio_str == '':
-                     document.periodo_inicio = None
-                 else:
-                     try:
-                         document.periodo_inicio = datetime.strptime(periodo_inicio_str, '%Y-%m-%d').date()
-                     except ValueError:
-                          flash('Invalid start date format ignored. Use YYYY-MM-DD.', 'warning')
-            
-            if periodo_fin_str is not None: # Check if field was submitted
-                 if periodo_fin_str == '':
-                      document.periodo_fin = None
-                 else:
-                      try:
-                          document.periodo_fin = datetime.strptime(periodo_fin_str, '%Y-%m-%d').date()
-                      except ValueError:
-                           flash('Invalid end date format ignored. Use YYYY-MM-DD.', 'warning')
-
-            document.favorito = favorito
-
-            # Commit changes to the database
             db.session.commit()
-            flash(f'Metadata for "{document.titulo_original}" updated successfully!', 'success')
-
-            # Log activity
+            
             log_activity(
-                user_id=user_id, 
-                activity_type='EDIT_DOC_METADATA', 
+                user_id=user_id,
+                activity_type='EDIT_DOC_METADATA_MODAL', # New activity type
                 document_id=doc_id,
                 ip_address=request.remote_addr,
-                details=f"Edited metadata for: {document.titulo_original}"
+                details=f"Edited metadata for: {document.titulo_original} via modal"
             )
-            
-            # Redirect back to the PARENT folder of the document
-            return redirect(url_for('list_files', folder_id=document.id_carpeta))
+            return jsonify({'success': True, 'message': f'Metadata for "{document.titulo_original}" updated successfully!'}), 200
 
         except Exception as e:
-            db.session.rollback() 
-            print(f"Error updating document metadata: {e}")
-            flash(f'Error updating metadata: {e}', 'danger')
-            # Re-fetch data needed for the form in case of error during POST
-            categories = Categoria.query.order_by(Categoria.nombre).all()
-            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-            # Re-render the edit form with existing data and error message
-            return render_template('edit_file.html', 
-                                   document=document, # Pass the original document back
-                                   categories=categories, 
-                                   folders=user_folders)
-
-
+            db.session.rollback()
+            print(f"Error updating document metadata via modal: {e}")
+            return jsonify({'success': False, 'message': f'Error updating metadata: {str(e)}'}), 500
+    
     # --- Handle GET Request (Show Edit Form) ---
-    else: # request.method == 'GET'
-         # Fetch categories and folders needed for the form dropdowns
-         categories = Categoria.query.order_by(Categoria.nombre).all()
-         user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-         
-         # --- CORRECTED RENDER_TEMPLATE CALL ---
-         # Pass the 'document' object fetched at the start of the function
-         return render_template('edit_file.html', 
-                                document=document, 
-                                categories=categories, 
-                                folders=user_folders)
-         # --------------------------------------
+    flash("Direct GET to edit page is not supported for modal editing.", "info")
+    return redirect(url_for('list_files', folder_id=document.id_carpeta))
+
 
     
     # --- Folder Creation Route ---
@@ -1517,6 +1447,59 @@ def get_user_folders_api():
         return jsonify([{'id': f.id_carpeta, 'name': f.nombre} for f in folders])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# --- Home route ---
+
+@app.route('/home')
+@login_required # Make sure this decorator is defined and imported
+def home_dashboard():
+    from models import Documento
+    user_id = session.get('user_id')
+    # The check below is good, but @login_required should handle unauthorized access.
+    # If @login_required redirects, this explicit check might be redundant
+    # unless you want a specific flash message here.
+    if not user_id:
+        flash("Please log in to view the home page.", "warning")
+        return redirect(url_for('login')) # Or your actual login route name
+
+    try:
+        # Fetch Favorite Documents
+        favorite_documents = Documento.query.filter_by(
+            id_usuario=user_id,
+            favorito=True
+        ).order_by(
+            Documento.fecha_modificacion.desc()
+        ).limit(10).all()
+
+        # Fetch Recent Documents (based on modification date)
+        recent_documents = Documento.query.filter_by(
+            id_usuario=user_id
+        ).order_by(
+            Documento.fecha_modificacion.desc()
+        ).limit(10).all()
+
+    except Exception as e:
+        print(f"Error fetching documents for home dashboard: {e}")
+        flash("Could not load dashboard information.", "error")
+        favorite_documents = []
+        recent_documents = []
+
+    return render_template(
+        'home_dashboard.html',
+        favorite_documents=favorite_documents,
+        recent_documents=recent_documents,
+        current_page='home', # For sidebar active state
+        current_folder_id=None  # <<< --- THIS LINE IS ADDED/CORRECTED ---
+    )
+
+# --- Base route ---
+@app.route('/')
+@login_required
+def index_redirect():
+    # This route will redirect logged-in users from '/' to '/home'
+    # If not logged in, @login_required will redirect to login page.
+    return redirect(url_for('home_dashboard'))
+
 
 # --- Context processor ---
 
