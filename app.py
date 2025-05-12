@@ -27,6 +27,7 @@ from datetime import datetime, timezone # Add timezone here
 
 from flask import current_app
 from sqlalchemy import or_
+from flask import jsonify
 
 load_dotenv() 
 
@@ -277,11 +278,11 @@ def dev_login():
         flash('This login method is only available in development mode.', 'danger')
         return redirect(url_for('login')) # Redirect to normal login
 
-    DEFAULT_USER_CODIGO = "DEV_USER"  # Or any code you prefer
+    DEFAULT_USER_CODIGO = "DEV_USER"
     DEFAULT_USER_NAME = "Developer Teammate"
-    DEFAULT_USER_TIPO = "E" # Example: 'E' for Estudiante, adjust as needed
-    DEFAULT_USER_PLANTEL = "CUCEI_DEV" # Example
-    DEFAULT_USER_SECCION = "DEV_SECTION" # Example
+    DEFAULT_USER_TIPO = "E"
+    DEFAULT_USER_PLANTEL = "CUALTOS_DEV" 
+    DEFAULT_USER_SECCION = "DEVELOPER" 
 
     # Try to find the default user
     dev_user = Usuario.query.filter_by(codigo_usuario=DEFAULT_USER_CODIGO).first()
@@ -1436,19 +1437,22 @@ def activity_log():
 # --- Global search Route ---
 
 @app.route('/search', methods=['GET'])
-@login_required
-
+@login_required # Assuming you have this decorator
 def global_search_route():
-    from models import Documento, Carpeta, Usuario
+    from models import Documento, Carpeta
     user_id = session.get('user_id')
-    search_term = request.args.get('q_global', '').strip() 
+    search_term = request.args.get('q_global', '').strip()
 
     found_documents = []
     found_folders = []
 
+    if not user_id: # Should be caught by @login_required, but good practice
+        flash('Please log in to perform a search.', 'warning')
+        return redirect(url_for('login')) # Or your login route name
+
     if search_term:
         search_like = f"%{search_term}%"
-
+        
         # Query documents across all user's folders
         found_documents = Documento.query.filter(
             Documento.id_usuario == user_id,
@@ -1457,29 +1461,74 @@ def global_search_route():
                 Documento.descripcion.ilike(search_like)
                 # Add other fields to search in documents if desired
             )
-        ).all()
+        ).order_by(Documento.fecha_modificacion.desc()).all() # Example ordering
 
         # Query folders across all user's folders (root and sub-folders)
         found_folders = Carpeta.query.filter(
             Carpeta.id_usuario == user_id,
             Carpeta.nombre.ilike(search_like)
-        ).all()
+        ).order_by(Carpeta.nombre).all() # Example ordering
 
+        # It's good practice to log search activity
+        # Assuming log_activity function is defined and imported
         log_activity(
             user_id=user_id,
             activity_type='GLOBAL_SEARCH',
             ip_address=request.remote_addr,
             details=f"Searched for: '{search_term}'. Found {len(found_documents)} docs, {len(found_folders)} folders."
         )
-
     
+    # Pass current_folder_id as None for global search results context
+    # This will allow the _create_folder_modal.html to render without error,
+    # and the url_for will correctly build with parent_folder_id=None (root).
     return render_template(
         'search_results.html',
         search_term=search_term,
         documents=found_documents,
         folders=found_folders,
-        current_page='search_results' 
+        current_folder_id=None,  # <<< --- ADDED THIS LINE ---
+        current_page='search_results' # For highlighting active nav link if needed
     )
+
+
+
+#--- Get categories route jsonify ---
+ 
+@app.route('/api/get_categories')
+def get_categories_api():
+    from models import Categoria
+    try:
+        categories = Categoria.query.order_by(Categoria.nombre).all()
+        return jsonify([{'id': cat.id_categoria, 'name': cat.nombre} for cat in categories])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+#--- Get folders route jsonify ---
+
+@app.route('/api/get_user_folders')
+@login_required
+def get_user_folders_api():
+    from models import Carpeta
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
+    try:
+        folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
+        return jsonify([{'id': f.id_carpeta, 'name': f.nombre} for f in folders])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# --- Context processor ---
+
+@app.context_processor
+def inject_current_user():
+    from flask import Flask, render_template, request, redirect, url_for, flash, session, current_app
+    from models import Usuario, Documento, Carpeta
+    user_id = session.get('user_id')
+    if user_id:
+        user = Usuario.query.get(user_id) # Fetch user object from DB using ID in session
+        return dict(current_user=user)
+    return dict(current_user=None) # No user in session
 
 # --- Error Handlers ---
 @app.errorhandler(413)

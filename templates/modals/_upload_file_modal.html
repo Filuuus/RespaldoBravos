@@ -1,0 +1,85 @@
+<div id="upload-modal" class="upload-modal">
+    <div class="upload-modal-content">
+        <h2>Subir Archivo</h2>
+        
+        <form id="upload-form" data-upload-url="{{ url_for('upload_route') }}">
+            {# CSRF token if you are using Flask-WTF or similar - not currently in your setup #}
+            {# {{ form.csrf_token }} #}
+
+            <div class="form-group">
+                <label for="file-name">Nombre del archivo (Opcional)</label>
+                <input type="text" id="file-name" name="custom_title" placeholder="Dejar en blanco para usar nombre original">
+                {# Note: Your backend /upload route needs to be adapted if you want to use this custom_title #}
+            </div>
+            
+            <div class="form-group date-group">
+                <label>Fecha (Opcional - para periodo)</label>
+                <div class="date-inputs">
+                    <input type="text" id="day-input" placeholder="DD" maxlength="2">
+                    <input type="text" id="month-input" placeholder="MM" maxlength="2">
+                    <input type="text" id="year-input" placeholder="AAAA" maxlength="4">
+                </div>
+                {# Note: JS will need to format this as YYYY-MM-DD and decide if it's periodo_inicio or periodo_fin #}
+            </div>
+            
+            <div class="form-group">
+                <label for="category-select">Categoría (Opcional)</label>
+                <select id="category-select" name="categoria" class="form-select"> {# Added Bootstrap class #}
+                    <option value="">-- Seleccionar categoría --</option>
+                    {# Options will be populated dynamically by JavaScript from /api/get_categories #}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="destination-folder-select">Carpeta Destino (Opcional)</label>
+                <select id="destination-folder-select" name="carpeta" class="form-select"> {# Added Bootstrap class #}
+                    <option value="">-- Mis Archivos (Raíz) --</option>
+                    {# Options will be populated dynamically by JavaScript from /api/get_user_folders #}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="modal-descripcion">Descripción (Opcional)</label>
+                <textarea class="form-control" name="descripcion" id="modal-descripcion" rows="3"></textarea>
+            </div>
+
+            <div class="form-check mb-3">
+                <input type="checkbox" class="form-check-input" name="favorito" id="modal-favorito" value="true">
+                <label class="form-check-label" for="modal-favorito">Marcar como Favorito</label>
+            </div>
+            
+            <div class="file-upload-area">
+                {# Ensure your actual file input is present; it's 'file-input' in your JS #}
+                <input type="file" id="file-input" name="file" hidden required> {# Added name="file" and required #}
+                
+                <div id="drop-area" class="drop-area">
+                    <div id="drag-text" class="drag-text">
+                        <span id="drag-icon" class="drag-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#d5b25c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </span>
+                        <p>Arrastra tu archivo aquí o</p>
+                        <button type="button" id="upload-button" class="upload-button">Seleccionar archivo</button>
+                    </div>
+                    
+                    <div id="preview-container" class="preview-container" style="display: none;">
+                        <img id="preview-image" class="preview-image">
+                        <div class="preview-info">
+                            <p id="preview-name" class="preview-name"></p>
+                            <p id="preview-type" class="preview-type"></p>
+                            <p id="preview-size" class="preview-size"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" id="cancel-button" class="cancel-button" data-bs-dismiss="modal">Cancelar</button> {# Added data-bs-dismiss if using Bootstrap modal JS for closing #}
+                <button type="submit" id="submit-button" class="submit-button">Subir</button>
+            </div>
+        </form>
+    </div>
+</div>
