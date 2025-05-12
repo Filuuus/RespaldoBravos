@@ -813,133 +813,77 @@ def delete_file(doc_id):
 @app.route('/edit/<int:doc_id>', methods=['GET', 'POST'])
 @login_required
 def edit_file(doc_id):
-    # --- Import models needed specifically for this route ---
-    # Import all needed models at the start of the function
-    from models import Documento, Categoria, Carpeta 
-    # --------------------------------------------------------
+    from models import Documento, Categoria, Carpeta # Ensure models are imported
+    from werkzeug.utils import secure_filename # For new title
+    from datetime import datetime # For date parsing
 
     user_id = session.get('user_id')
-    if not user_id:
-        flash('User session error.', 'danger')
-        return redirect(url_for('login'))
+    document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first_or_404()
 
-    # 1. Fetch the document to edit, ensuring ownership
-    # Using first() and checking is fine, first_or_404() is an alternative
-    document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first() 
-    if not document:
-        flash('File not found or access denied.', 'danger')
-        return redirect(url_for('list_files')) 
-
-    # Store parent ID for redirection after POST
-    parent_folder_id = document.id_carpeta 
-
-    # --- Handle POST Request (Save Changes) ---
     if request.method == 'POST':
         try:
-            # Get updated data from the form
-            new_title = request.form.get('titulo_nuevo', default=None)
-            # Handle category - ensure None is stored if "" is submitted
-            id_categoria_str = request.form.get('categoria', default='')
-            id_categoria = int(id_categoria_str) if id_categoria_str.isdigit() else None
+            # Get updated data from the form (FormData sent by JS)
+            new_title_str = request.form.get('titulo_nuevo', '').strip()
+            id_categoria_str = request.form.get('categoria', '')
+            id_carpeta_str = request.form.get('carpeta', '') # This is the folder ID
+            descripcion_str = request.form.get('descripcion', '')
+            periodo_inicio_str = request.form.get('periodo_inicio', '')
+            periodo_fin_str = request.form.get('periodo_fin', '')
+            favorito_str = request.form.get('favorito', 'false') # Checkbox value is 'true' or not present
+
+            # Update Title only if a new one was provided
+            if new_title_str:
+                document.titulo_original = secure_filename(new_title_str)
+
+            # Update category
+            document.id_categoria = int(id_categoria_str) if id_categoria_str.isdigit() else None
             
-            # --- Correctly process folder ID from dropdown ---
-            id_carpeta_str = request.form.get('carpeta', default='') # Get submitted value ("" for root)
-            if id_carpeta_str == '':
-                id_carpeta = None # Root folder selected
-            elif id_carpeta_str.isdigit():
-                id_carpeta_to_check = int(id_carpeta_str)
-                # Validate folder exists and belongs to user
-                folder_check = Carpeta.query.filter_by(id_carpeta=id_carpeta_to_check, id_usuario=user_id).first()
-                if folder_check:
-                    id_carpeta = id_carpeta_to_check # Use the valid ID
-                else:
-                    flash("Invalid folder selected. Keeping original.", "warning")
-                    id_carpeta = document.id_carpeta # Keep original if invalid selection
+            # Update folder
+            if id_carpeta_str == '' or not id_carpeta_str.isdigit(): # Empty string means root
+                document.id_carpeta = None
             else:
-                # Invalid non-digit value submitted? Keep original
-                flash("Invalid folder value submitted. Keeping original.", "warning")
-                id_carpeta = document.id_carpeta 
-            # --------------------------------------------------
+                # Optional: Validate folder exists and belongs to user
+                folder_check = Carpeta.query.filter_by(id_carpeta=int(id_carpeta_str), id_usuario=user_id).first()
+                if folder_check:
+                    document.id_carpeta = int(id_carpeta_str)
+                else:
+                    # Handle case where selected folder is invalid, perhaps keep original or raise error
+                    # For now, we'll allow it but ideally, this is validated by the populated dropdown
+                    document.id_carpeta = int(id_carpeta_str) # Or keep document.id_carpeta
+
+
+            document.descripcion = descripcion_str
+
+            # Parse and update dates
+            document.periodo_inicio = datetime.strptime(periodo_inicio_str, '%Y-%m-%d').date() if periodo_inicio_str else None
+            document.periodo_fin = datetime.strptime(periodo_fin_str, '%Y-%m-%d').date() if periodo_fin_str else None
             
-            descripcion = request.form.get('descripcion', default=None)
-            periodo_inicio_str = request.form.get('periodo_inicio', default=None)
-            periodo_fin_str = request.form.get('periodo_fin', default=None)
-            favorito = 'favorito' in request.form 
+            document.favorito = favorito_str == 'true'
 
-            # Update Title only if a new one was provided and non-empty
-            if new_title and new_title.strip():
-                 # Consider adding validation for title length if needed
-                 document.titulo_original = secure_filename(new_title.strip()) 
+            # Update modification timestamp (SQLAlchemy might do this automatically if onupdate is set)
+            document.fecha_modificacion = datetime.now(timezone.utc)
 
-            # Update other fields
-            document.id_categoria = id_categoria 
-            document.id_carpeta = id_carpeta # Use the validated ID from dropdown logic
-            document.descripcion = descripcion # Allow setting description to empty string if desired
 
-            # Parse and update dates (Allow clearing dates)
-            if periodo_inicio_str is not None: # Check if field was submitted
-                 if periodo_inicio_str == '':
-                     document.periodo_inicio = None
-                 else:
-                     try:
-                         document.periodo_inicio = datetime.strptime(periodo_inicio_str, '%Y-%m-%d').date()
-                     except ValueError:
-                          flash('Invalid start date format ignored. Use YYYY-MM-DD.', 'warning')
-            
-            if periodo_fin_str is not None: # Check if field was submitted
-                 if periodo_fin_str == '':
-                      document.periodo_fin = None
-                 else:
-                      try:
-                          document.periodo_fin = datetime.strptime(periodo_fin_str, '%Y-%m-%d').date()
-                      except ValueError:
-                           flash('Invalid end date format ignored. Use YYYY-MM-DD.', 'warning')
-
-            document.favorito = favorito
-
-            # Commit changes to the database
             db.session.commit()
-            flash(f'Metadata for "{document.titulo_original}" updated successfully!', 'success')
-
-            # Log activity
+            
             log_activity(
-                user_id=user_id, 
-                activity_type='EDIT_DOC_METADATA', 
+                user_id=user_id,
+                activity_type='EDIT_DOC_METADATA_MODAL', # New activity type
                 document_id=doc_id,
                 ip_address=request.remote_addr,
-                details=f"Edited metadata for: {document.titulo_original}"
+                details=f"Edited metadata for: {document.titulo_original} via modal"
             )
-            
-            # Redirect back to the PARENT folder of the document
-            return redirect(url_for('list_files', folder_id=document.id_carpeta))
+            return jsonify({'success': True, 'message': f'Metadata for "{document.titulo_original}" updated successfully!'}), 200
 
         except Exception as e:
-            db.session.rollback() 
-            print(f"Error updating document metadata: {e}")
-            flash(f'Error updating metadata: {e}', 'danger')
-            # Re-fetch data needed for the form in case of error during POST
-            categories = Categoria.query.order_by(Categoria.nombre).all()
-            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-            # Re-render the edit form with existing data and error message
-            return render_template('edit_file.html', 
-                                   document=document, # Pass the original document back
-                                   categories=categories, 
-                                   folders=user_folders)
-
-
+            db.session.rollback()
+            print(f"Error updating document metadata via modal: {e}")
+            return jsonify({'success': False, 'message': f'Error updating metadata: {str(e)}'}), 500
+    
     # --- Handle GET Request (Show Edit Form) ---
-    else: # request.method == 'GET'
-         # Fetch categories and folders needed for the form dropdowns
-         categories = Categoria.query.order_by(Categoria.nombre).all()
-         user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-         
-         # --- CORRECTED RENDER_TEMPLATE CALL ---
-         # Pass the 'document' object fetched at the start of the function
-         return render_template('edit_file.html', 
-                                document=document, 
-                                categories=categories, 
-                                folders=user_folders)
-         # --------------------------------------
+    flash("Direct GET to edit page is not supported for modal editing.", "info")
+    return redirect(url_for('list_files', folder_id=document.id_carpeta))
+
 
     
     # --- Folder Creation Route ---

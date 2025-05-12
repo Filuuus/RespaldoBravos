@@ -79,10 +79,14 @@
                     </button>
                     <ul class="dropdown-menu shadow-sm" aria-labelledby="newButtonDropdown">
                         <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="triggerUploadModal"> {# Changed ID for JS targeting #}
-                                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Upload file
+                            <a class="dropdown-item d-flex align-items-center" href="#" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#upload-modal" 
+                            id="triggerUploadModalForPopulate"> {# ID can be kept if JS needs to target it for other reasons, but not for opening #}
+                                <i class="bi bi-cloud-arrow-up-fill me-2"></i>File upload
                             </a>
                         </li>
+
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item d-flex align-items-center" href="#" data-bs-toggle="modal" data-bs-target="#createFolderModal" id="triggerCreateFolderModal">
@@ -92,7 +96,7 @@
                     </ul>
                 </div>
             </div>
-            
+
             <nav>
                 <ul>
                     <li>
@@ -127,10 +131,12 @@
 
 {% include 'modals/_upload_file_modal.html' %}
 {% include 'modals/_create_folder_modal.html' %}
+{% include 'modals/_edit_file_modal.html' %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/drive_scripts.js') }}"></script>
 <script src="{{ url_for('static', filename='js/upload-file.js') }}"></script>
+<script src="{{ url_for('static', filename='js/edit_file.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

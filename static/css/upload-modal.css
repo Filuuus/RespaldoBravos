@@ -1,115 +1,60 @@
-/* RespaldoBravos/static/css/upload-modal.css - Light Theme Update with Animations */
-
-.upload-modal {
-    display: flex; /* Keep as flex for centering, but manage visibility with opacity */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    z-index: 2000;
-    justify-content: center;
-    align-items: center;
-
-    /* Animation: Initial state (hidden) */
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s; /* Delay visibility change */
+#uploadModalLabel { 
+    color: #343a40; 
+    /* font-size: 1.5rem; */ 
 }
 
-.upload-modal.active {
-    /* Animation: Active state (visible) */
-    opacity: 1;
-    visibility: visible;
-    transition-delay: 0s; /* Ensure visibility transition happens immediately when active */
-}
-
-.upload-modal-content {
-    background-color: #ffffff;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 800px;
-    padding: 30px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-    color: #212529;
-
-    /* Animation: Initial state for content */
-    transform: translateY(-30px) scale(0.98); /* Start slightly up and scaled down */
-    opacity: 0; /* Start transparent */
-    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-}
-
-.upload-modal.active .upload-modal-content {
-    /* Animation: Active state for content */
-    transform: translateY(0) scale(1); /* End at normal position and scale */
-    opacity: 1; /* End fully opaque */
-}
-
-.upload-modal-content h2 {
-    color: #343a40;
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 24px;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
+.form-label {
     color: #495057;
     font-weight: bold;
+    margin-bottom: 0.5rem;
 }
 
-.form-group input[type="text"],
-.form-group select {
-    width: 100%;
-    padding: 12px;
+/*
+#file-name,
+#uploadModalPeriodoInicio,
+#uploadModalPeriodoFin,
+#category-select-upload,
+#destination-folder-select-upload,
+#modal-descripcion-upload {
     background-color: #fff;
     border: 1px solid #ced4da;
-    border-radius: 5px;
     color: #212529;
-    font-size: 16px;
-    box-sizing: border-box;
 }
+*/
 
-.form-group select {
-    appearance: none;
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%235f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 20px;
-}
-
-.date-group .date-inputs {
+.date-inputs {
     display: flex;
     gap: 10px;
 }
-
-.date-group input {
+.date-inputs input {
     flex: 1;
     text-align: center;
 }
+*/
 
+/* File Upload Area and Drop Area */
 .file-upload-area {
-    margin-bottom: 20px;
+    margin-bottom: 1rem; 
+    display: flex;      
+    flex-direction: column; 
+    flex-grow: 1; 
 }
+
 
 .drop-area {
     border: 2px dashed #adb5bd;
-    border-radius: 10px;
-    padding: 30px;
+    border-radius: 0.375rem; 
+    padding: 20px;
     text-align: center;
     background-color: #f8f9fa;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, border-color 0.3s;
     min-height: 200px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    color: #5f6368;
+    flex-grow: 1;
 }
 
 .drop-area.highlight {
@@ -121,47 +66,41 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
-    color: #5f6368;
+    gap: 10px;
 }
 
 .drag-icon svg {
-    margin-bottom: 10px;
-    stroke: #5f6368 !important;
+    width: 48px;
+    height: 48px;
+    stroke: #6c757d !important; 
+    margin-bottom: 8px;
 }
+/* If SVG path uses fill: */
+/* .drag-icon svg path {
+    fill: #6c757d;
+} */
 
-.drag-icon svg path {
-    stroke: #5f6368; /* If path has stroke */
-    /* fill: #5f6368; */ /* If path has fill and needs changing - you had this commented, keeping it that way */
-}
 
-
-.upload-button {
-    background-color: #c4a14b;
-    color: #ffffff;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s;
-}
-
-.upload-button:hover {
-    background-color: #d5b25c;
+/* "Seleccionar archivo" button inside drop area */
+#upload-button.btn-outline-primary { 
+    font-weight: normal;
+    padding: 0.25rem 0.75rem;
 }
 
 .preview-container {
-    display: flex;
+    display: flex; 
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
     width: 100%;
+    margin-top: 15px;
+    max-height: 180px;  
+    overflow-y: auto;   
 }
 
 .preview-image {
     max-width: 100%;
-    max-height: 150px;
+    max-height: 100px; 
     border-radius: 5px;
     object-fit: contain;
     border: 1px solid #e0e0e0;
@@ -175,72 +114,53 @@
 .preview-name {
     font-weight: bold;
     color: #343a40;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
     word-break: break-all;
+    font-size: 0.9rem;
 }
 
 .preview-type,
 .preview-size {
     color: #6c757d;
-    font-size: 14px;
-    margin: 3px 0;
+    font-size: 0.8rem;
+    margin: 2px 0;
 }
 
-.form-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
-}
-
-.cancel-button,
-.submit-button {
-    padding: 12px 25px;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.cancel-button {
-    background-color: #f8f9fa;
-    color: #343a40;
-    border: 1px solid #ced4da;
-}
-
-.cancel-button:hover {
-    background-color: #e2e6ea;
-}
-
-.submit-button {
+/*
+  Styling for main modal action buttons (Submit, Cancel)
+*/
+/*
+#submit-upload-button {
     background-color: #c4a14b;
     color: #ffffff;
-    border: none;
-    font-weight: bold;
+    border-color: #c4a14b;
 }
-
-.submit-button:hover {
+#submit-upload-button:hover {
     background-color: #d5b25c;
+    border-color: #d5b25c;
+}
+*/
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+                             
+    .modal-dialog.modal-xl {
+        max-width: 95%; 
+        margin: 1.75rem auto;
+    }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .upload-modal-content {
-        padding: 20px;
-        width: 95%;
+@media (max-width: 767.98px) { /* Bootstrap's 'md' breakpoint (where .col-md-6 stacks) */
+    .file-upload-area {
+        margin-top: 1.5rem; /
     }
-
-    .date-group .date-inputs {
-        flex-direction: column;
-        gap: 10px;
+    .drop-area {
+        min-height: 180px; /* Adjust for stacked view if needed */
     }
-
-    .form-actions {
-        flex-direction: column;
-        gap: 15px;
+    .preview-container {
+        max-height: 150px; /* Further restrict preview height on small screens */
     }
-
-    .cancel-button,
-    .submit-button {
-        width: 100%;
+    .preview-image {
+        max-height: 80px;
     }
 }

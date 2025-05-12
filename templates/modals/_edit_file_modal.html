@@ -1,0 +1,68 @@
+<div class="modal fade" id="editFileModal" tabindex="-1" aria-labelledby="editFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered"> {# modal-lg for more space #}
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editFileModalLabel">Edit File Metadata</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            {# The action URL will be set dynamically by JavaScript #}
+            <form id="editFileForm" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="doc_id" id="editFileModalDocId">
+
+                    <div class="mb-3">
+                        <label class="form-label">Original Filename (Read-only)</label>
+                        <input type="text" class="form-control" id="editFileModalOriginalTitle" readonly disabled>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editFileModalTituloNuevo" class="form-label">New Title (Optional)</label>
+                        <input type="text" class="form-control" name="titulo_nuevo" id="editFileModalTituloNuevo" placeholder="Leave blank to keep original title">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editFileModalCategoria" class="form-label">Category</label>
+                            <select name="categoria" id="editFileModalCategoria" class="form-select">
+                                <option value="">-- Select Category --</option>
+                                {# Options will be populated by JavaScript #}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editFileModalCarpeta" class="form-label">Folder</label>
+                            <select name="carpeta" id="editFileModalCarpeta" class="form-select">
+                                <option value="">-- Root Folder --</option>
+                                {# Options will be populated by JavaScript #}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editFileModalDescripcion" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" name="descripcion" id="editFileModalDescripcion" rows="3"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editFileModalPeriodoInicio" class="form-label">Start Period (Optional)</label>
+                            <input type="date" class="form-control" name="periodo_inicio" id="editFileModalPeriodoInicio">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editFileModalPeriodoFin" class="form-label">End Period (Optional)</label>
+                            <input type="date" class="form-control" name="periodo_fin" id="editFileModalPeriodoFin">
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" name="favorito" id="editFileModalFavorito" value="true">
+                        <label class="form-check-label" for="editFileModalFavorito">Mark as Favorite</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

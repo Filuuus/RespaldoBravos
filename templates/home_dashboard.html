@@ -18,7 +18,8 @@
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2 fs-4 text-secondary"></i>
                                 <h6 class="card-title mb-0 text-truncate" title="{{ doc.titulo_original }}">
-                                    <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="text-decoration-none stretched-link">{{ doc.titulo_original }}</a>
+                                    {# Link to download, not stretched if other buttons are present #}
+                                    <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
                                 </h6>
                             </div>
                             <p class="card-text text-muted small mb-1">
@@ -27,11 +28,20 @@
                             <p class="card-text text-muted small">
                                 Size: {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
                             </p>
-                            {# Add a small actions menu or link to edit page if desired #}
-                            <div class="mt-auto pt-2 text-end">
-                                <a href="{{ url_for('edit_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-pencil-square"></i> Edit
-                                </a>
+                            <div class="mt-auto pt-2 d-flex justify-content-end">
+                                <a href="#" class="btn btn-sm btn-outline-warning action-btn me-2 edit-file-btn"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#editFileModal"
+                                   data-doc-id="{{ doc.id_documento }}"
+                                   data-doc-title-original="{{ doc.titulo_original }}"
+                                   data-doc-description="{{ doc.descripcion or '' }}"
+                                   data-doc-category-id="{{ doc.id_categoria if doc.id_categoria is not none else '' }}"
+                                   data-doc-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
+                                   data-doc-periodo-inicio="{{ doc.periodo_inicio.strftime('%Y-%m-%d') if doc.periodo_inicio else '' }}"
+                                   data-doc-periodo-fin="{{ doc.periodo_fin.strftime('%Y-%m-%d') if doc.periodo_fin else '' }}"
+                                   data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}"
+                                   title="Edit Metadata"><i class="bi bi-pencil-square"></i> Edit</a>
+                                {# Add other actions like Move if desired #}
                             </div>
                         </div>
                     </div>
@@ -45,7 +55,7 @@
         {% endif %}
     </section>
 
-    {# Recents Section #}
+    {# Recents Section (similar update for its edit button) #}
     <section>
         <h4 class="mb-3"><i class="bi bi-clock-history me-2 text-info"></i>Recently Modified</h4>
         {% if recent_documents %}
@@ -57,7 +67,7 @@
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2 fs-4 text-secondary"></i>
                                 <h6 class="card-title mb-0 text-truncate" title="{{ doc.titulo_original }}">
-                                    <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="text-decoration-none stretched-link">{{ doc.titulo_original }}</a>
+                                    <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
                                 </h6>
                             </div>
                             <p class="card-text text-muted small mb-1">
@@ -66,10 +76,19 @@
                              <p class="card-text text-muted small">
                                 Size: {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
                             </p>
-                            <div class="mt-auto pt-2 text-end">
-                                <a href="{{ url_for('edit_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-pencil-square"></i> Edit
-                                </a>
+                            <div class="mt-auto pt-2 d-flex justify-content-end">
+                               <a href="#" class="btn btn-sm btn-outline-warning action-btn me-2 edit-file-btn"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#editFileModal"
+                                   data-doc-id="{{ doc.id_documento }}"
+                                   data-doc-title-original="{{ doc.titulo_original }}"
+                                   data-doc-description="{{ doc.descripcion or '' }}"
+                                   data-doc-category-id="{{ doc.id_categoria if doc.id_categoria is not none else '' }}"
+                                   data-doc-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
+                                   data-doc-periodo-inicio="{{ doc.periodo_inicio.strftime('%Y-%m-%d') if doc.periodo_inicio else '' }}"
+                                   data-doc-periodo-fin="{{ doc.periodo_fin.strftime('%Y-%m-%d') if doc.periodo_fin else '' }}"
+                                   data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}"
+                                   title="Edit Metadata"><i class="bi bi-pencil-square"></i> Edit</a>
                             </div>
                         </div>
                     </div>
@@ -87,6 +106,7 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }} {# Include scripts from base_drive_layout if any #}
 <style>
 /* Optional: Styles specific to home_dashboard.html cards */
 .drive-item-card .card-title a {
