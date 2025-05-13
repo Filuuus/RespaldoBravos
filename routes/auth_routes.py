@@ -3,19 +3,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from datetime import datetime, timezone
 # Assuming your models are in a top-level 'models.py' and db in 'extensions.py'
 from models import Usuario
+from utils import log_activity, login_required
 from extensions import db
-
-# If log_activity is a shared utility, import it from its location (e.g., from ..utils import log_activity)
-# For now, defining a placeholder or assuming it's globally available via app context if registered.
-# A better practice is to import it from a utils module.
-def log_activity(user_id, activity_type, ip_address=None, details=None, **kwargs):
-    # This is a placeholder. Replace with your actual log_activity import or implementation.
-    # If log_activity itself uses 'request', it should be fine as 'request' is context-local.
-    print(f"Auth_BP LOG: User {user_id}, Type: {activity_type}, IP: {ip_address}, Details: {details}")
-    # To call the main app's log_activity if it's attached to current_app:
-    # if hasattr(current_app, 'log_activity_func'):
-    #     current_app.log_activity_func(user_id=user_id, ...) # Example
-    # Or, better, from ..app import log_activity (if app.py is importable and log_activity is defined there)
 
 auth_bp = Blueprint('auth_bp', __name__, url_prefix='/auth')
 
@@ -26,7 +15,7 @@ def login():
 
     if 'user_id' in session:
         # Assuming home_dashboard is an app-level route or in a different blueprint
-        return redirect(url_for('home_dashboard')) 
+        return redirect(url_for('main_bp.home_dashboard')) 
 
     if request.method == 'POST':
         codigo = request.form.get('codigo')
@@ -84,7 +73,7 @@ def login():
                      flash(f'Welcome back, {user.nombre_completo}!', 'success')
                      log_activity(user_id=user.id_usuario, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr)
                      # Assuming list_files is an app-level route or in a different blueprint
-                     return redirect(next_url or url_for('list_files')) 
+                     return redirect(next_url or url_for('main_bp.list_files')) 
 
                  except Exception as e:
                       db.session.rollback()
@@ -121,11 +110,11 @@ def dev_login():
     session.permanent = True
     flash(f'Successfully logged in as default user: {dev_user.nombre_completo}', 'success')
     log_activity(user_id=dev_user.id_usuario, activity_type='DEV_LOGIN_SUCCESS', ip_address=request.remote_addr)
-    return redirect(url_for('list_files')) # Assuming list_files is app-level or in another blueprint
+    return redirect(url_for('main_bp.list_files')) # Assuming list_files is app-level or in another blueprint
 
 
 @auth_bp.route('/logout')
-# @login_required # If login_required is defined in app.py, it needs to be imported or passed
+@login_required
 def logout():
     # Simple check for session before trying to log activity
     user_id_to_log = session.get('user_id')

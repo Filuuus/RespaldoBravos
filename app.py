@@ -17,6 +17,10 @@ from zeep import Client, Settings, Transport
 from zeep.exceptions import Fault 
 
 from routes.auth_routes import auth_bp
+from routes.main_routes import main_bp
+from routes.document_actions_routes import doc_actions_bp
+from routes.api_routes import api_bp
+from utils import log_activity, login_required
 
 load_dotenv() 
 
@@ -41,6 +45,9 @@ app.config['SIIAU_VALIDA_KEY'] = os.environ.get('SIIAU_VALIDA_KEY')
 app.config['ITEMS_PER_PAGE'] = 30 
 
 app.register_blueprint(auth_bp)
+app.register_blueprint(main_bp)
+app.register_blueprint(doc_actions_bp)
+app.register_blueprint(api_bp)
 
 # --- 2. Initialize Extensions that NEED config (like DB) ---
 db.init_app(app) 
@@ -100,15 +107,6 @@ def format_file_size(size_bytes):
 app.jinja_env.filters['format_file_size'] = format_file_size
 # ---------------------------------------
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Please log in to access this page.', 'warning')
-            return redirect(url_for('login', next=request.url)) 
-        return f(*args, **kwargs)
-    return decorated_function
-
 # --- File Upload Route ---
 # Modify route definition to accept optional parent folder ID
 @app.route('/upload', defaults={'parent_folder_id': None}, methods=['GET', 'POST'])
@@ -126,7 +124,7 @@ def upload_route(parent_folder_id):
         parent_folder = Carpeta.query.filter_by(id_carpeta=parent_folder_id, id_usuario=user_id).first()
         if not parent_folder:
              flash("Target folder not found or access denied.", "warning")
-             return redirect(url_for('list_files')) # Redirect to root
+             return redirect(url_for('main_bp.list_files')) # Redirect to root
 
     # --- Handle POST Request (File Upload) ---
     if request.method == 'POST':
@@ -158,7 +156,7 @@ def upload_route(parent_folder_id):
             if not parent_folder:
                 flash("Invalid target folder specified.", "danger")
                 # Redirect appropriately, maybe back to upload form?
-                return redirect(url_for('upload_route', parent_folder_id=parent_folder_id)) 
+                return redirect(url_for('doc_actions_bp.upload_route', parent_folder_id=parent_folder_id)) 
         else:
             # Invalid value submitted? Default to root or show error?
             flash("Invalid folder selection.", "warning")
@@ -253,7 +251,7 @@ def upload_route(parent_folder_id):
                 # --------------------
 
                 # Redirect back to the folder where file was uploaded
-                return redirect(url_for('list_files', folder_id=parent_folder_id_to_save)) 
+                return redirect(url_for('main_bp.list_files', folder_id=parent_folder_id_to_save)) 
 
             except Exception as e:
                 db.session.rollback() 
@@ -291,399 +289,6 @@ def upload_route(parent_folder_id):
                                categories=categories, 
                                folders=user_folders, # Pass folders
                                parent_folder_id=parent_folder_id) # Keep passing this
-
-# --- File Listing Route ---
-@app.route('/files', defaults={'folder_id': None}, methods=['GET'])
-@app.route('/files/<int:folder_id>', methods=['GET'])
-@login_required
-def list_files(folder_id):
-    # --- Import models needed ---
-    from models import Documento, Categoria, Carpeta, Usuario
-    from sqlalchemy import asc, desc, text, or_ # Ensure text and or_ are imported
-    # ----------------------------
-
-    user_id = session.get('user_id')
-
-    # Get Sort, Filter Parameters
-    sort_by = request.args.get('sort_by', 'name')
-    sort_dir_param = request.args.get('sort_dir', 'asc')
-    
-    filter_category_id = request.args.get('filter_category', '')
-    filter_mime_type = request.args.get('filter_mime', '')
-    filter_modified_str = request.args.get('filter_modified', '')
-    filter_period_year_str = request.args.get('filter_period_year', '')
-
-    # Initialize active_filters dictionary to store display names for active filters
-    active_filters = {
-        'category_name': 'Any', 
-        'mime_type_name': 'Any',
-        'modified_name': 'Any time',
-        'period_year_name': 'Any'
-    }
-
-    # Determine Sort Order
-    sort_order_func = desc if sort_dir_param == 'desc' else asc
-    
-    # Base Queries
-    # Ensure Carpeta and Documento models are accessible
-    folder_query = Carpeta.query.filter_by(id_usuario=user_id, id_carpeta_padre=folder_id)
-    doc_query = Documento.query.filter_by(id_usuario=user_id, id_carpeta=folder_id)
-
-    # Apply Category Filter
-    if filter_category_id and filter_category_id != 'all' and filter_category_id.isdigit():
-        doc_query = doc_query.filter(Documento.id_categoria == int(filter_category_id))
-        # Ensure Categoria model is accessible and db.session.get is used if appropriate
-        cat_obj = db.session.get(Categoria, int(filter_category_id)) 
-        if cat_obj: active_filters['category_name'] = cat_obj.nombre
-    
-    # Apply MIME Type Filter
-    if filter_mime_type and filter_mime_type != 'all':
-        doc_query = doc_query.filter(Documento.mime_type.ilike(f'%{filter_mime_type}%'))
-        if 'pdf' in filter_mime_type: active_filters['mime_type_name'] = 'PDF'
-        elif 'jpeg' in filter_mime_type: active_filters['mime_type_name'] = 'JPEG Image'
-        elif 'png' in filter_mime_type: active_filters['mime_type_name'] = 'PNG Image'
-        elif 'text/plain' in filter_mime_type: active_filters['mime_type_name'] = 'Text File'
-        else: 
-            # Generic name for other MIME types
-            active_filters['mime_type_name'] = filter_mime_type.split('/')[-1].upper() if '/' in filter_mime_type else filter_mime_type.upper()
-
-    # Apply Modified Date Filter
-    if filter_modified_str and filter_modified_str != 'any':
-        now_utc = datetime.now(timezone.utc) # Ensure datetime and timezone are imported
-        # Set display name for active filter
-        if filter_modified_str == 'today': active_filters['modified_name'] = 'Today'
-        elif filter_modified_str == 'yesterday': active_filters['modified_name'] = 'Yesterday'
-        elif filter_modified_str == 'last7days': active_filters['modified_name'] = 'Last 7 days'
-        elif filter_modified_str == 'last30days': active_filters['modified_name'] = 'Last 30 days'
-        
-        # Apply query filter
-        if filter_modified_str == 'today':
-            start_date = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
-            doc_query = doc_query.filter(Documento.fecha_modificacion >= start_date)
-        elif filter_modified_str == 'yesterday':
-            start_date = (now_utc - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0) # Ensure timedelta imported
-            end_date = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
-            doc_query = doc_query.filter(Documento.fecha_modificacion >= start_date, Documento.fecha_modificacion < end_date)
-        elif filter_modified_str == 'last7days':
-            start_date = (now_utc - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
-            doc_query = doc_query.filter(Documento.fecha_modificacion >= start_date)
-        elif filter_modified_str == 'last30days':
-            start_date = (now_utc - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
-            doc_query = doc_query.filter(Documento.fecha_modificacion >= start_date)
-
-    # Apply Period Year Filter
-    if filter_period_year_str and filter_period_year_str != 'all' and filter_period_year_str.isdigit():
-        year_to_filter = int(filter_period_year_str)
-        # Ensure sql_func (sqlalchemy.func) and or_ are imported
-        doc_query = doc_query.filter(
-            or_(
-                sql_func.extract('year', Documento.periodo_inicio) == year_to_filter,
-                sql_func.extract('year', Documento.periodo_fin) == year_to_filter
-            )
-        )
-        active_filters['period_year_name'] = str(year_to_filter)
-
-    # Apply Sorting
-    if sort_by == 'name':
-        folder_query = folder_query.order_by(sort_order_func(Carpeta.nombre))
-        doc_query = doc_query.order_by(sort_order_func(Documento.titulo_original))
-    elif sort_by == 'date':
-        folder_query = folder_query.order_by(sort_order_func(Carpeta.fecha_modificacion))
-        doc_query = doc_query.order_by(sort_order_func(Documento.fecha_modificacion))
-    elif sort_by == 'type': # Assumes Categoria model is joined for Documento
-        folder_query = folder_query.order_by(asc(Carpeta.nombre)) # Folders don't have 'type' in the same way
-        doc_query = doc_query.join(Documento.categoria, isouter=True).order_by(sort_order_func(Categoria.nombre), asc(Documento.titulo_original))
-    elif sort_by == 'size':
-        folder_query = folder_query.order_by(asc(Carpeta.nombre)) # Folders don't have size
-        doc_query = doc_query.order_by(sort_order_func(Documento.file_size).nullslast()) # Handle NULL sizes
-    else: # Default sort
-        folder_query = folder_query.order_by(asc(Carpeta.nombre))
-        doc_query = doc_query.order_by(asc(Documento.titulo_original))
-
-    sub_folders = folder_query.all()
-    documents_in_folder = doc_query.all()
-
-    # Breadcrumb and Current Folder Name Logic
-    current_folder_name = "My Files"
-    breadcrumbs = []
-    if folder_id:
-        current_f = db.session.get(Carpeta, folder_id)
-        if current_f and current_f.id_usuario == user_id:
-            current_folder_name = current_f.nombre
-            path_to_root = []
-            temp_f = current_f
-            while temp_f:
-                path_to_root.insert(0, {'id': temp_f.id_carpeta, 'nombre': temp_f.nombre})
-                if temp_f.id_carpeta_padre:
-                    parent_f = db.session.get(Carpeta, temp_f.id_carpeta_padre)
-                    if not parent_f or parent_f.id_usuario != user_id:
-                        temp_f = None 
-                    else:
-                        temp_f = parent_f
-                else:
-                    temp_f = None 
-            breadcrumbs = path_to_root
-        else:
-            flash("Folder not found or access denied.", "warning")
-            return redirect(url_for('list_files', folder_id=None))
-
-    all_available_categories = Categoria.query.order_by(Categoria.nombre).all()
-    
-    # Get distinct years from periodo_inicio for the filter dropdown
-    distinct_years_query = db.session.query(sql_func.distinct(sql_func.extract('year', Documento.periodo_inicio)))\
-        .filter(Documento.id_usuario == user_id, Documento.periodo_inicio != None)\
-        .order_by(sql_func.extract('year', Documento.periodo_inicio).desc()).all()
-    all_available_period_years = [int(year[0]) for year in distinct_years_query if year[0] is not None]
-
-
-    # Determine display name for the sort button
-    sort_by_display_name = "Name"
-    if sort_by == 'date': sort_by_display_name = "Date Modified"
-    elif sort_by == 'type': sort_by_display_name = "Type"
-    elif sort_by == 'size': sort_by_display_name = "Size"
-
-    return render_template(
-        'drive_home.html',
-        folders=sub_folders,
-        documents=documents_in_folder,
-        current_folder_id=folder_id,
-        current_folder_name=current_folder_name,
-        breadcrumbs=breadcrumbs,
-        sort_by=sort_by,
-        sort_dir=sort_dir_param, # Pass the actual direction
-        all_available_categories=all_available_categories,
-        all_available_period_years=all_available_period_years,
-        active_filters=active_filters,
-        sort_by_display_name=sort_by_display_name,
-        current_page='my_files'
-    )
-
-
-# --- File Download Route ---
-@app.route('/download/<int:doc_id>')
-@login_required # Protect the route
-def download_file(doc_id):
-    # --- Import models needed specifically for this route ---
-    from models import Documento # Import here
-    local_s3_client = current_app.s3_client 
-    # --------------------------------------------------------
-
-    user_id = session.get('user_id')
-    if not user_id:
-        flash('User session error.', 'danger')
-        return redirect(url_for('login'))
-    try:
-        # 1. Retrieve the document from the database
-        document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first()
-        if not document:
-            flash('File not found or access denied.', 'danger')
-            return redirect(url_for('list_files'))  # Or handle differently
-
-        # 2. Get the S3 object key
-        s3_key = document.s3_object_key  # Assuming this field contains the S3 key
-
-        # 3. Generate a pre-signed URL for the S3 object.
-        presigned_url = local_s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': app.config['S3_BUCKET'], 'Key': s3_key}, 
-            ExpiresIn=3600  # URL expires in 1 hour
-        )
-
-        # --- Add Log Call ---
-        log_activity(
-            user_id=user_id, 
-            activity_type='DOWNLOAD_DOC_LINK', # Log link generation, not actual download
-            document_id=doc_id,
-            ip_address=request.remote_addr,
-            details=f'Generated download link for: {document.titulo_original}'
-        )
-        # --------------------
-
-        # 4. Redirect the user to the presigned URL
-        return redirect(presigned_url)
-
-
-    except Exception as e:
-        print(f"Error downloading file: {e}")
-        flash('Error downloading file.', 'danger')
-        return redirect(url_for('list_files'))
-
-
-# --- Activity Logging Helper Function ---
-def log_activity(user_id, activity_type, ip_address=None, document_id=None, folder_id=None, details=None):
-    """Logs an activity to the database."""
-    from extensions import db 
-    
-    # Get IP address from request if not provided
-    if ip_address is None and request:
-        ip_address = request.remote_addr
-
-    try:
-        log_entry = ActividadUsuario(
-            id_usuario=user_id,
-            tipo_actividad=activity_type,
-            direccion_ip=ip_address,
-            id_documento=document_id,
-            id_carpeta=folder_id,
-            detalle=details
-            # 'fecha' column has a default value in the database/model
-        )
-        db.session.add(log_entry)
-        db.session.commit()
-        print(f"Activity Logged: User {user_id} - {activity_type}") # Optional console log
-    except Exception as e:
-        db.session.rollback()
-        # Log the error to the console or a file, but don't let logging failure stop the main action
-        print(f"!!! ERROR logging activity: {e}")
-        print(f"!!! Original log data: User={user_id}, Type={activity_type}, IP={ip_address}, Doc={document_id}, Folder={folder_id}, Details={details}")
-
-# ---------------------------------------
-
-
-
-# --- File Deletion Route ---
-@app.route('/delete/<int:doc_id>', methods=['POST']) # Accept only POST requests
-@login_required
-def delete_file(doc_id):
-    # --- Import models needed specifically for this route ---
-    from models import Documento 
-    local_s3_client = current_app.s3_client
-    # --------------------------------------------------------
-    
-    user_id = session.get('user_id')
-    if not user_id:
-        flash('User session error.', 'danger')
-        return redirect(url_for('login'))
-
-    try:
-        # 1. Find the document record, ensuring it belongs to the current user
-        document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first()
-
-        if not document:
-            flash('File not found or access denied.', 'danger')
-            return redirect(url_for('list_files'))
-
-        # 2. Get S3 details BEFORE deleting DB record
-        s3_bucket = document.s3_bucket
-        s3_key = document.s3_object_key
-        original_filename = document.titulo_original # For flash message
-
-        # 3. Delete the object from S3
-        if local_s3_client: # Check if client is initialized
-            try:
-                print(f"Deleting S3 object: {s3_key} from bucket {s3_bucket}")
-                local_s3_client.delete_object(Bucket=s3_bucket, Key=s3_key)
-                print("S3 object deleted successfully.")
-            except Exception as e:
-                # Log the error, but often proceed to delete DB record anyway
-                # Otherwise, you might have an orphaned S3 file if DB delete succeeds later
-                print(f"Error deleting S3 object {s3_key}: {e}")
-                flash(f'Could not delete file from S3 storage, but removing database record. Error: {e}', 'warning')
-        else:
-             flash('S3 client not available. Cannot delete file from storage, but removing database record.', 'warning')
-
-        # --- Log Call ---
-        log_activity(
-            user_id=user_id, 
-            activity_type='DELETE_DOC', 
-            document_id=None, # Log the ID that was deleted
-            ip_address=request.remote_addr,
-            details=f"Deleted file: {original_filename} (S3 Key: {s3_key})"
-        )
-        # --------------------
-
-        # 4. Delete the record from the Database
-        db.session.delete(document)
-        db.session.commit()
-        
-        flash(f'File "{original_filename}" deleted successfully.', 'success')
-        
-
-    except Exception as e:
-        db.session.rollback() # Roll back DB changes if any error occurred during commit
-        print(f"Error deleting file record from database: {e}")
-        flash('An error occurred while deleting the file record.', 'danger')
-
-    # Redirect back to the file list regardless of S3 outcome (if DB delete was attempted)
-    return redirect(url_for('list_files'))
-
-
-# --- File Metadata Edit Route ---
-@app.route('/edit/<int:doc_id>', methods=['GET', 'POST'])
-@login_required
-def edit_file(doc_id):
-    from models import Documento, Categoria, Carpeta # Ensure models are imported
-    from werkzeug.utils import secure_filename # For new title
-    from datetime import datetime # For date parsing
-
-    user_id = session.get('user_id')
-    document = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first_or_404()
-
-    if request.method == 'POST':
-        try:
-            # Get updated data from the form (FormData sent by JS)
-            new_title_str = request.form.get('titulo_nuevo', '').strip()
-            id_categoria_str = request.form.get('categoria', '')
-            id_carpeta_str = request.form.get('carpeta', '') # This is the folder ID
-            descripcion_str = request.form.get('descripcion', '')
-            periodo_inicio_str = request.form.get('periodo_inicio', '')
-            periodo_fin_str = request.form.get('periodo_fin', '')
-            favorito_str = request.form.get('favorito', 'false') # Checkbox value is 'true' or not present
-
-            # Update Title only if a new one was provided
-            if new_title_str:
-                document.titulo_original = secure_filename(new_title_str)
-
-            # Update category
-            document.id_categoria = int(id_categoria_str) if id_categoria_str.isdigit() else None
-            
-            # Update folder
-            if id_carpeta_str == '' or not id_carpeta_str.isdigit(): # Empty string means root
-                document.id_carpeta = None
-            else:
-                # Optional: Validate folder exists and belongs to user
-                folder_check = Carpeta.query.filter_by(id_carpeta=int(id_carpeta_str), id_usuario=user_id).first()
-                if folder_check:
-                    document.id_carpeta = int(id_carpeta_str)
-                else:
-                    # Handle case where selected folder is invalid, perhaps keep original or raise error
-                    # For now, we'll allow it but ideally, this is validated by the populated dropdown
-                    document.id_carpeta = int(id_carpeta_str) # Or keep document.id_carpeta
-
-
-            document.descripcion = descripcion_str
-
-            # Parse and update dates
-            document.periodo_inicio = datetime.strptime(periodo_inicio_str, '%Y-%m-%d').date() if periodo_inicio_str else None
-            document.periodo_fin = datetime.strptime(periodo_fin_str, '%Y-%m-%d').date() if periodo_fin_str else None
-            
-            document.favorito = favorito_str == 'true'
-
-            # Update modification timestamp (SQLAlchemy might do this automatically if onupdate is set)
-            document.fecha_modificacion = datetime.now(timezone.utc)
-
-
-            db.session.commit()
-            
-            log_activity(
-                user_id=user_id,
-                activity_type='EDIT_DOC_METADATA_MODAL', # New activity type
-                document_id=doc_id,
-                ip_address=request.remote_addr,
-                details=f"Edited metadata for: {document.titulo_original} via modal"
-            )
-            return jsonify({'success': True, 'message': f'Metadata for "{document.titulo_original}" updated successfully!'}), 200
-
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error updating document metadata via modal: {e}")
-            return jsonify({'success': False, 'message': f'Error updating metadata: {str(e)}'}), 500
-    
-    # --- Handle GET Request (Show Edit Form) ---
-    flash("Direct GET to edit page is not supported for modal editing.", "info")
-    return redirect(url_for('list_files', folder_id=document.id_carpeta))
-
-
     
     # --- Folder Creation Route ---
 @app.route('/create_folder', methods=['POST']) # Only accept POST requests
@@ -700,7 +305,7 @@ def create_folder(parent_folder_id=None): # Default parent is None (root)
     if not folder_name:
         flash('Folder name cannot be empty.', 'warning')
         # Redirect back to the specific folder view if parent_folder_id exists
-        return redirect(url_for('list_files', folder_id=parent_folder_id)) 
+        return redirect(url_for('main_bp.list_files', folder_id=parent_folder_id)) 
 
     # TODO: Validate parent_folder_id belongs to user if it's not None
 
@@ -742,7 +347,7 @@ def create_folder(parent_folder_id=None): # Default parent is None (root)
         flash('An error occurred while creating the folder.', 'danger')
 
     # Redirect back to the folder view where the creation happened
-    return redirect(url_for('list_files', folder_id=parent_folder_id))
+    return redirect(url_for('main_bp.list_files', folder_id=parent_folder_id))
 
 
 # --- Folder Deletion Route ---
@@ -764,7 +369,7 @@ def delete_folder(folder_id):
 
         if not folder_to_delete:
             flash('Folder not found or access denied.', 'danger')
-            return redirect(url_for('list_files')) # Redirect to root or previous location?
+            return redirect(url_for('main_bp.list_files')) # Redirect to root or previous location?
 
         # --- Store parent ID BEFORE deleting for redirection ---
         parent_folder_id = folder_to_delete.id_carpeta_padre 
@@ -781,7 +386,7 @@ def delete_folder(folder_id):
         if has_subfolders or has_files:
             flash(f'Folder "{folder_name}" is not empty. Please delete its contents first.', 'warning')
             # Redirect back to the view containing the non-empty folder
-            return redirect(url_for('list_files', folder_id=parent_folder_id)) 
+            return redirect(url_for('main_bp.list_files', folder_id=parent_folder_id)) 
         else:
             # Store details before deleting
             folder_id_to_log = folder_to_delete.id_carpeta
@@ -815,10 +420,10 @@ def delete_folder(folder_id):
         folder_check = Carpeta.query.filter_by(id_carpeta=folder_id, id_usuario=user_id).first()
         if folder_check:
              parent_folder_id = folder_check.id_carpeta_padre
-        return redirect(url_for('list_files', folder_id=parent_folder_id))
+        return redirect(url_for('main_bp.list_files', folder_id=parent_folder_id))
 
     # Redirect back to the parent folder's view after deletion attempt
-    return redirect(url_for('list_files', folder_id=parent_folder_id))
+    return redirect(url_for('main_bp.list_files', folder_id=parent_folder_id))
 
 
 # --- Folder Rename Route ---
@@ -851,7 +456,7 @@ def rename_folder(folder_id):
         
         if new_name == folder_to_rename.nombre:
              flash('New name is the same as the current name.', 'info')
-             return redirect(url_for('list_files', folder_id=parent_folder_id))
+             return redirect(url_for('main_bp.list_files', folder_id=parent_folder_id))
 
         # TODO: Add validation for invalid characters if needed (e.g., '/')
 
@@ -888,7 +493,7 @@ def rename_folder(folder_id):
                 # --------------------
                 
                 # Redirect back to the parent folder view
-                return redirect(url_for('list_files', folder_id=parent_folder_id))
+                return redirect(url_for('main_bp.list_files', folder_id=parent_folder_id))
 
         except Exception as e:
             db.session.rollback()
@@ -901,98 +506,6 @@ def rename_folder(folder_id):
     else: # request.method == 'GET'
         return render_template('rename_folder.html', folder=folder_to_rename)
 # ----------------------------------------------------------------------------
-
-# --- Move File Route ---
-@app.route('/move_file/<int:doc_id>', methods=['GET', 'POST'])
-@login_required
-def move_file(doc_id):
-    # --- Import models needed ---
-    from models import Documento, Carpeta
-    # --------------------------
-
-    user_id = session.get('user_id')
-    if not user_id:
-        flash('User session error.', 'danger')
-        return redirect(url_for('login'))
-
-    # Fetch the document to move, ensuring ownership
-    doc_to_move = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first_or_404()
-
-    if request.method == 'POST':
-        dest_folder_id_str = request.form.get('destination_folder', '') # "" for root
-
-        # Determine target folder ID (None for root)
-        destination_folder_id = None
-        destination_folder = None # To store folder object if not root
-        if dest_folder_id_str.isdigit():
-            destination_folder_id = int(dest_folder_id_str)
-            # Validate destination folder exists and belongs to user
-            destination_folder = Carpeta.query.filter_by(id_carpeta=destination_folder_id, id_usuario=user_id).first()
-            if not destination_folder:
-                 flash("Invalid destination folder selected.", "danger")
-                 # Re-render move form with current data
-                 user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-                 return render_template('move_file.html', document=doc_to_move, folders=user_folders)
-        elif dest_folder_id_str != '':
-             # Submitted value wasn't empty string or digits - invalid selection
-             flash("Invalid destination folder value.", "danger")
-             user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-             return render_template('move_file.html', document=doc_to_move, folders=user_folders)
-
-        # Check if trying to move to the same folder
-        if doc_to_move.id_carpeta == destination_folder_id:
-             flash('File is already in the destination folder.', 'info')
-             return redirect(url_for('list_files', folder_id=destination_folder_id))
-
-        # --- Validation: Check for name conflict in destination ---
-        conflicting_file = Documento.query.filter(
-            Documento.id_usuario == user_id,
-            Documento.id_carpeta == destination_folder_id, # Check destination
-            Documento.titulo_original == doc_to_move.titulo_original,
-            Documento.id_documento != doc_id # Exclude the file itself
-        ).first()
-
-        if conflicting_file:
-            dest_name = destination_folder.nombre if destination_folder else "Root Folder"
-            flash(f'A file named "{doc_to_move.titulo_original}" already exists in "{dest_name}". Cannot move file.', 'danger')
-            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-            return render_template('move_file.html', document=doc_to_move, folders=user_folders)
-        # --- End Name Conflict Check ---
-
-        # Proceed with the move
-        try:
-            original_parent_id = doc_to_move.id_carpeta # For logging/redirect if needed
-            doc_to_move.id_carpeta = destination_folder_id # Update the foreign key
-            db.session.commit()
-            flash(f'File "{doc_to_move.titulo_original}" moved successfully.', 'success')
-
-            # Log activity
-            log_activity(
-                user_id=user_id, 
-                activity_type='MOVE_DOC', 
-                document_id=doc_id,
-                folder_id=original_parent_id, # Log original location?
-                ip_address=request.remote_addr,
-                details=f"Moved '{doc_to_move.titulo_original}' to Folder ID: {destination_folder_id}"
-            )
-            
-            # Redirect to the destination folder
-            return redirect(url_for('list_files', folder_id=destination_folder_id))
-
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error moving file: {e}")
-            flash('An error occurred while moving the file.', 'danger')
-            user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-            return render_template('move_file.html', document=doc_to_move, folders=user_folders)
-
-    # --- Handle GET Request (Show Move Form) ---
-    else: # request.method == 'GET'
-        # Fetch all folders for this user to populate the dropdown
-        user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-        return render_template('move_file.html', document=doc_to_move, folders=user_folders)
-    # ----------------------------------------------------------------------------
-
 
 # --- Move Folder Route ---
 @app.route('/move_folder/<int:folder_id>', methods=['GET', 'POST'])
@@ -1030,7 +543,7 @@ def move_folder(folder_id):
         # 2a. Cannot move to the same folder (Technically redundant with 2c check)
         if folder_to_move.id_carpeta_padre == destination_folder_id:
             flash('Folder is already in that location.', 'info')
-            return redirect(url_for('list_files', folder_id=original_parent_id))
+            return redirect(url_for('main_bp.list_files', folder_id=original_parent_id))
 
         # 2b. Cannot move folder into itself
         if destination_folder_id == folder_id:
@@ -1107,7 +620,7 @@ def move_folder(folder_id):
             )
             
             # Redirect to the new parent folder
-            return redirect(url_for('list_files', folder_id=destination_folder_id))
+            return redirect(url_for('main_bp.list_files', folder_id=destination_folder_id))
 
         except Exception as e:
             db.session.rollback()
@@ -1125,142 +638,6 @@ def move_folder(folder_id):
         user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
         return render_template('move_folder.html', folder_to_move=folder_to_move, destination_folders=user_folders)
     # ------------------------------------------------------------------------------------------
-
-
-# --- Activity Log Viewing Route ---
-@app.route('/activity_log')
-@login_required
-def activity_log():
-    # --- Import model needed ---
-    from models import ActividadUsuario
-    # --------------------------
-    
-    user_id = session.get('user_id')
-    page = request.args.get('page', 1, type=int)
-    # Ensure ActividadUsuario model is accessible
-    log_pagination = ActividadUsuario.query.filter_by(id_usuario=user_id)\
-        .order_by(ActividadUsuario.fecha.desc())\
-        .paginate(page=page, per_page=app.config.get('ITEMS_PER_PAGE', 20), error_out=False)
-    
-    active_filters_default = {
-        'category_name': 'Any', 'mime_type_name': 'Any', 
-        'modified_name': 'Any time', 'period_year_name': 'Any'
-    }
-    return render_template(
-        'activity_log.html',
-        log_pagination=log_pagination,
-        current_page='activity_log',
-        current_folder_id=None, # No specific folder context
-        active_filters=active_filters_default # Pass default filters
-    )
-
-
-# --- Global search Route ---
-
-@app.route('/search', methods=['GET'])
-@login_required # Assuming you have this decorator
-def global_search_route():
-    from models import Documento, Carpeta
-    user_id = session.get('user_id')
-    search_term = request.args.get('q_global', '').strip()
-    found_documents = []
-    found_folders = []
-
-    if search_term:
-        search_like = f"%{search_term}%"
-        # Ensure Documento and Carpeta models are accessible
-        found_documents = Documento.query.filter(
-            Documento.id_usuario == user_id,
-            or_(
-                Documento.titulo_original.ilike(search_like),
-                Documento.descripcion.ilike(search_like)
-            )
-        ).all()
-        found_folders = Carpeta.query.filter(
-            Carpeta.id_usuario == user_id,
-            Carpeta.nombre.ilike(search_like)
-        ).all()
-        # Ensure log_activity is defined/imported
-        log_activity(user_id=user_id, activity_type='GLOBAL_SEARCH', ip_address=request.remote_addr, details=f"Searched: '{search_term}'")
-    
-    active_filters_default = {
-        'category_name': 'Any', 'mime_type_name': 'Any', 
-        'modified_name': 'Any time', 'period_year_name': 'Any'
-    }
-    return render_template(
-        'search_results.html',
-        search_term=search_term,
-        documents=found_documents,
-        folders=found_folders,
-        current_page='search_results', # Or None, depending on your sidebar logic
-        current_folder_id=None, # No specific folder context
-        active_filters=active_filters_default # Pass default filters
-    )
-
-
-
-#--- Get categories route jsonify ---
- 
-@app.route('/api/get_categories')
-def get_categories_api():
-    from models import Categoria
-    try:
-        categories = Categoria.query.order_by(Categoria.nombre).all()
-        return jsonify([{'id': cat.id_categoria, 'name': cat.nombre} for cat in categories])
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-#--- Get folders route jsonify ---
-
-@app.route('/api/get_user_folders')
-@login_required
-def get_user_folders_api():
-    from models import Carpeta
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'User not logged in'}), 401
-    try:
-        folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-        return jsonify([{'id': f.id_carpeta, 'name': f.nombre} for f in folders])
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# --- Home route ---
-
-@app.route('/home')
-@login_required # Make sure this decorator is defined and imported 
-def home_dashboard():
-    from models import Documento
-    user_id = session.get('user_id')
-    # Ensure Documento model is accessible (imported or defined)
-    favorite_documents = Documento.query.filter_by(id_usuario=user_id, favorito=True).order_by(Documento.fecha_modificacion.desc()).limit(10).all()
-    recent_documents = Documento.query.filter_by(id_usuario=user_id).order_by(Documento.fecha_modificacion.desc()).limit(10).all()
-    
-    # Default active_filters for pages that don't use the filter chips directly
-    # but extend base_drive_layout.html which might have elements expecting these.
-    active_filters_default = {
-        'category_name': 'Any', 
-        'mime_type_name': 'Any', 
-        'modified_name': 'Any time', 
-        'period_year_name': 'Any'
-    }
-
-    return render_template(
-        'home_dashboard.html',
-        favorite_documents=favorite_documents,
-        recent_documents=recent_documents,
-        current_page='home',
-        current_folder_id=None, # No specific folder context on home
-        active_filters=active_filters_default # Pass default filters
-    )
-# --- Base route ---
-@app.route('/')
-@login_required
-def index_redirect():
-    # This route will redirect logged-in users from '/' to '/home'
-    # If not logged in, @login_required will redirect to login page.
-    return redirect(url_for('home_dashboard'))
-
 
 # --- Context processor ---
 
@@ -1289,5 +666,3 @@ def handle_file_too_large(e):
 # --- Main entry point ---
 if __name__ == '__main__':
     app.run(debug=app.config['DEBUG'])
-
-    

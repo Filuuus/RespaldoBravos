@@ -27,7 +27,7 @@
         {% endwith %}
 
         {# Form posts back to the same URL but with POST method #}
-        <form method="post" action="{{ url_for('edit_file', doc_id=document.id_documento) }}"> 
+        <form method="post" action="{{ url_for('doc_actions_bp.edit_file', doc_id=document.id_documento) }}"> 
             {# Display original filename but don't allow editing it here usually #}
              <div class="mb-3">
                 <label class="form-label">Original Filename (Read-only)</label>
@@ -94,7 +94,7 @@
 
             <button type="submit" class="btn btn-success">Save Changes</button>
             {# Link back to the file list #}
-            <a href="{{ url_for('list_files') }}" class="btn btn-secondary">Cancel</a> 
+            <a href="{{ url_for('main_bp.list_files') }}" class="btn btn-secondary">Cancel</a> 
 
         </form>
 

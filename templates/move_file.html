@@ -27,7 +27,7 @@
         {% endwith %}
 
         {# Form posts back to the same URL #}
-        <form method="post" action="{{ url_for('move_file', doc_id=document.id_documento) }}"> 
+        <form method="post" action="{{ url_for('doc_actions_bp.move_file', doc_id=document.id_documento) }}"> 
              <div class="mb-3">
                 <label for="destination_folder" class="form-label">Move To:</label>
                 <select name="destination_folder" id="destination_folder" class="form-select" required>
@@ -45,7 +45,7 @@
 
             <button type="submit" class="btn btn-primary">Move File</button>
             {# Link back to the file's CURRENT folder #}
-            <a href="{{ url_for('list_files', folder_id=document.id_carpeta if document.id_carpeta is not none else None) }}" class="btn btn-secondary">Cancel</a> 
+            <a href="{{ url_for('main_bp.list_files', folder_id=document.id_carpeta if document.id_carpeta is not none else None) }}" class="btn btn-secondary">Cancel</a> 
         </form>
 
     </div>

@@ -26,7 +26,7 @@
             {% endif %}
         {% endwith %}
 
-        <form method="post" enctype="multipart/form-data" action="{{ url_for('upload_route') }}">
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('doc_actions_bp.upload_route') }}">
 
             <input type="hidden" name="parent_folder_id" value="{{ parent_folder_id if parent_folder_id is not none else '' }}">
 
