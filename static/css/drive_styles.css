@@ -202,89 +202,53 @@ body {
 /* --- Grid View Item Styling --- */
 .drive-item-card {
     border: 1px solid #dadce0;
-    transition: box-shadow 0.15s ease-in-out; /* Simpler transition */
+    transition: box-shadow 0.15s ease-in-out; 
     height: 100%;
-    border-radius: 12px; /* Rounder cards */
+    border-radius: 12px; 
     background-color: #fff;
 }
 .drive-item-card:hover {
-    box-shadow: 0 1px 3px 0 rgba(60,64,67,.302),0 4px 8px 3px rgba(60,64,67,.149); /* Google's deeper hover shadow */
-    /* border-color: transparent; /* Optional: hide border on hover with shadow */
+    box-shadow: 0 1px 3px 0 rgba(60,64,67,.302),0 4px 8px 3px rgba(60,64,67,.149); 
 }
 
-/* --- Grid View - Dark Themed Folder Card Styling --- */
+/* --- Grid View - Ligth Themed Folder Card Styling --- */
 .grid-section-folders .drive-folder-card-light {
-    background-color: #fff; /* Light background */
-    color: #3c4043; /* Dark text */
-    border: 1px solid #dadce0; /* Standard light border */
-    border-radius: 12px; /* Consistent rounding with file cards */
-    height: auto; /* Let content define height for a more compact bar */
-    /* min-height: 56px; */ /* Example: ensure a minimum height */
+    background-color: #fff; color: #3c4043; border: 1px solid #dadce0;
+    border-radius: 12px; height: auto;
 }
-.grid-section-folders .drive-folder-card-light:hover {
-    /* Keep general .drive-item-card:hover shadow or define a specific one */
-    background-color: #f8f9fa; /* Slight hover background */
-}
+.grid-section-folders .drive-folder-card-light:hover { background-color: #f8f9fa; }
 .grid-section-folders .drive-folder-card-light .card-body {
-    padding: 0.6rem 0.75rem; /* Adjusted padding for a more compact feel */
-    display: flex;
-    align-items: center;
-    justify-content: space-between; /* Icon & Name on left, Kebab on right */
-    text-align: left;
+    padding: 0.6rem 0.75rem; display: flex; align-items: center;
+    justify-content: space-between; text-align: left;
 }
 .grid-section-folders .drive-folder-card-light .drive-folder-link-main {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    color: #3c4043; /* Text color for link */
-    flex-grow: 1; /* Allow link to take available space */
-    overflow: hidden; /* For text truncation within the link */
-    margin-right: 0.5rem; /* Space before kebab menu */
+    display: flex; align-items: center; text-decoration: none;
+    color: #3c4043; flex-grow: 1; overflow: hidden; margin-right: 0.5rem;
 }
 .grid-section-folders .drive-folder-card-light .drive-folder-icon {
-    font-size: 1.25rem; /* Standard icon size */
-    color: #5f6368; /* Standard grey folder icon */
-    margin-right: 0.6rem;
-    flex-shrink: 0;
+    font-size: 1.25rem; color: #5f6368; margin-right: 0.6rem; flex-shrink: 0;
 }
 .grid-section-folders .drive-folder-card-light .drive-folder-name {
-    font-size: 0.875rem; /* Standard small text size */
-    font-weight: 400;   /* Regular weight for folder names */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.875rem; font-weight: 400; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
 }
 .grid-section-folders .drive-folder-card-light .drive-folder-link-main:hover .drive-folder-name {
-    color: #0b57d0; /* Standard link hover blue */
+    color: #0b57d0;
 }
-.grid-section-folders .drive-folder-card-light .drive-folder-action-kebab-container {
-    /* This div wraps the button to prevent flex-grow from affecting the button directly */
-    flex-shrink: 0;
-}
+.grid-section-folders .drive-folder-card-light .drive-folder-action-kebab-container { flex-shrink: 0; }
 .grid-section-folders .drive-folder-card-light .drive-folder-action-kebab {
-    color: #5f6368; /* Kebab icon color */
-    padding: 0.1rem 0.25rem; /* Make kebab button smaller */
-    line-height: 1; /* Ensure icon is centered */
-    background: none;
-    border: none;
+    color: #5f6368; padding: 0.1rem 0.25rem; line-height: 1;
+    background: none; border: none;
 }
 .grid-section-folders .drive-folder-card-light .drive-folder-action-kebab:hover,
 .grid-section-folders .drive-folder-card-light .drive-folder-action-kebab:focus {
-    color: #202124; /* Darker on hover/focus */
-    background-color: rgba(0,0,0,0.05); /* Subtle background */
+    color: #202124; background-color: rgba(0,0,0,0.05);
 }
-/* Ensure dropdown menu for kebab is styled if needed (Bootstrap usually handles this) */
 .grid-section-folders .drive-folder-card-light .dropdown-menu {
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    font-size: 0.875rem;
+    border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 0.875rem;
 }
-.grid-section-folders .drive-folder-card-light .dropdown-item {
-    padding: 0.5rem 1rem;
-}
-.grid-section-folders .drive-folder-card-light .dropdown-item i.bi {
-    margin-right: 0.5rem;
-}
+.grid-section-folders .drive-folder-card-light .dropdown-item { padding: 0.5rem 1rem; }
+.grid-section-folders .drive-folder-card-light .dropdown-item i.bi { margin-right: 0.5rem; }
 
 
 /* --- Grid View - File Card Styling (Light Theme) --- */
@@ -311,4 +275,68 @@ body {
 .drive-file-card .card-body .stretched-link::after {
     position: absolute; top: 0; right: 0; bottom: 0; left: 0;
     z-index: 1; content: "";
+}
+
+/* --- Filter Chips and Sorting Controls --- */
+.drive-filter-sort-controls {
+    padding-top: 0.75rem; /* Space above the controls */
+    margin-bottom: 1rem; /* Space below the controls */
+    border-top: 1px solid #e0e0e0; /* Separator line */
+    gap: 0.5rem; /* Spacing between chip groups and sort control */
+}
+
+.filter-chip.dropdown-toggle {
+    background-color: #f8f9fa; /* Light grey background for chips */
+    border: 1px solid #dadce0;
+    color: #3c4043;
+    font-size: 0.875rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 16px; /* Pill shape */
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+.filter-chip.dropdown-toggle:hover,
+.filter-chip.dropdown-toggle:focus {
+    background-color: #e9ecef; /* Slightly darker on hover/focus */
+    border-color: #adb5bd;
+    color: #202124;
+}
+.filter-chip.dropdown-toggle.show { /* When dropdown is open */
+    background-color: #e8f0fe;
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+.filter-chip.dropdown-toggle::after { /* Style Bootstrap's caret */
+    margin-left: 0.4em;
+    vertical-align: 0.1em;
+}
+
+.drive-filter-sort-controls .dropdown-menu {
+    font-size: 0.875rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.drive-filter-sort-controls .dropdown-item {
+    padding: 0.5rem 1rem;
+}
+
+/* Sort Control Button */
+.sort-control-button.dropdown-toggle {
+    font-size: 0.875rem;
+    color: #5f6368;
+    background-color: transparent;
+    border: none;
+    padding: 0.25rem 0.5rem;
+}
+.sort-control-button.dropdown-toggle:hover,
+.sort-control-button.dropdown-toggle:focus,
+.sort-control-button.dropdown-toggle.show {
+    background-color: #f1f3f4;
+    color: #202124;
+}
+.sort-control-button.dropdown-toggle::after {
+    margin-left: 0.4em;
+}
+#currentSortLabel {
+    font-weight: 500; /* Make current sort label slightly bolder */
+    color: #3c4043;
 }
