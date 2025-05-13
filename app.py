@@ -16,6 +16,8 @@ from werkzeug.utils import secure_filename
 from zeep import Client, Settings, Transport
 from zeep.exceptions import Fault 
 
+from routes.auth_routes import auth_bp
+
 load_dotenv() 
 
 # Initialize Flask app
@@ -38,52 +40,50 @@ app.config['SIIAU_VALIDA_KEY'] = os.environ.get('SIIAU_VALIDA_KEY')
 
 app.config['ITEMS_PER_PAGE'] = 30 
 
+app.register_blueprint(auth_bp)
+
 # --- 2. Initialize Extensions that NEED config (like DB) ---
 db.init_app(app) 
-
 migrate = Migrate(app,db)
 
 # --- 3. Initialize Boto3 S3 Client (can now safely read app.config) ---
-s3_client = None # Define outside try block
+app.s3_client = None # Initialize as an attribute of app
 try:
-    # Check if essential S3 config values were actually loaded
-    if (app.config['S3_KEY'] and 
-        app.config['S3_SECRET'] and 
-        app.config['S3_REGION'] and 
+    if (app.config['S3_KEY'] and
+        app.config['S3_SECRET'] and
+        app.config['S3_REGION'] and
         app.config['S3_BUCKET']):
-        
-        s3_client = boto3.client(
+        # Assign to app.s3_client
+        app.s3_client = boto3.client(
            "s3",
            aws_access_key_id=app.config['S3_KEY'],
            aws_secret_access_key=app.config['S3_SECRET'],
            region_name=app.config['S3_REGION']
         )
-        print("Boto3 S3 Client Initialized Successfully.")
+        print("Boto3 S3 Client Initialized Successfully and attached to app.")
     else:
         print("S3 credentials or configuration missing, S3 client not initialized.")
 except Exception as e:
     print(f"Error initializing Boto3 S3 Client: {e}")
-    s3_client = None 
-# ---------------------------------------------------------------------
+    app.s3_client = None
 
+# --- Initialize Zeep SOAP Client AND ATTACH TO APP ---
+app.siiau_client = None # Initialize as an attribute of app
+if app.config['SIIAU_WSDL_URL']:
+    try:
+        from zeep import Client, Settings
+        settings = Settings(strict=False, xml_huge_tree=True)
+        # Assign to app.siiau_client
+        app.siiau_client = Client(app.config['SIIAU_WSDL_URL'], settings=settings)
+        print("Zeep SIIAU Client Initialized Successfully and attached to app.")
+    except Exception as e:
+        print(f"Error initializing Zeep SIIAU Client: {e}")
+        app.siiau_client = None
+else:
+    print("SIIAU WSDL URL missing, Zeep client not initialized.")
 
-# --- Initialize Zeep SOAP Client ---
-siiau_client = None
-try:
-    if app.config['SIIAU_WSDL_URL']:
-        # strict=False can help with compatibility with some SOAP services
-        settings = Settings(strict=False, xml_huge_tree=True) 
-        # transport = Transport(timeout=10) # Optional: set timeout
-        siiau_client = Client(app.config['SIIAU_WSDL_URL'], settings=settings) #, transport=transport)
-        print("Zeep SIIAU Client Initialized Successfully.")
-        # Optional: Check if service/methods expected are available
-        # print(siiau_client.service)
-    else:
-        print("SIIAU WSDL URL missing, Zeep client not initialized.")
-except Exception as e:
-    print(f"Error initializing Zeep SIIAU Client: {e}")
-    siiau_client = None
-# ---------------------------------
+# --- Models (Import after app and db are configured if models depend on them at import time) ---
+from models import ActividadUsuario, Usuario, Documento, Carpeta, Categoria
 
 # --- Jinja Custom Filter for File Size ---
 def format_file_size(size_bytes):
@@ -100,28 +100,6 @@ def format_file_size(size_bytes):
 app.jinja_env.filters['format_file_size'] = format_file_size
 # ---------------------------------------
 
-
-# --- 4. Import Models ---
-# Models are now imported inside routes/functions where needed
-# from models import Usuario, Documento, Carpeta, Categoria, ActividadUsuario # KEEP THIS COMMENTED OUT
-
-# --- Define Routes ---
-# @app.route('/') 
-# def hello_world():
-#     # This route doesn't need models currently
-#     bucket_name = app.config.get('S3_BUCKET', 'Not Set') 
-#     try:
-#         db.session.execute(text('SELECT 1')) 
-#         db_status = "Database Connection OK"
-#     except Exception as e:
-#         db_status = f"Database Connection Error: {e}"
-    
-#     s3_status = "S3 Client OK" if s3_client else "S3 Client NOT Initialized"
-    
-#     return f'Hello, World! Configured S3 Bucket: {bucket_name}<br>{db_status}<br>{s3_status}'
-
-
-# --- Simple Login Required Decorator (Placeholder) ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -131,215 +109,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- Dummy Login/Logout Routes (Placeholders) ---
-# @app.route('/login') 
-# def login():
-#     user_id_to_log = 1 # Use the dummy ID
-#     session['user_id'] = user_id_to_log 
-#     flash('You were logged in (dummy login).', 'success')
-#     # Log after setting session
-#     log_activity(user_id=user_id_to_log, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr) 
-#     return redirect(request.args.get('next') or url_for('hello_world'))
-
-
-# --- Real Login Route ---
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    # If user is already logged in, redirect them away from login page
-    if 'user_id' in session:
-        return redirect(url_for('list_files')) 
-
-    if request.method == 'POST':
-        codigo = request.form.get('codigo')
-        nip = request.form.get('nip')
-        next_url = request.form.get('next') # Get redirect URL if provided
-
-        if not codigo or not nip:
-            flash('Please enter both Código and NIP.', 'warning')
-            return render_template('login.html')
-
-        # Check if Zeep client is available
-        if not siiau_client:
-             flash('Authentication service is currently unavailable.', 'danger')
-             return render_template('login.html')
-        
-        # Call the SIIAU valida service
-        try:
-            print(f"Calling SIIAU valida for user: {codigo}") # Log attempt
-            key = app.config.get('SIIAU_VALIDA_KEY')
-            if not key:
-                 raise ValueError("SIIAU Valida Key not configured in application.")
-
-            # Call the service using parameter names from WSDL/example
-            response = siiau_client.service.valida(usuario=codigo, password=nip, key=key) 
-            print(f"SIIAU Response: {response}") # Log raw response
-
-            # Process the response
-            if response == "0" or not response: # Check for '0' or empty/None response
-                 flash('Invalid CODE or NIP.', 'danger')
-                #  log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo}")
-                 return render_template('login.html')
-            else:
-                 # Successful authentication - Parse the response string
-                 # Expected: "T/E/A,Nombre Completo,Campus,SiglasCarrera/Campus"
-                 try:
-                     parts = response.split(',', 4) # Split only 3 times to keep name intact
-                     if len(parts) < 5: 
-                          raise ValueError("Unexpected response format from auth service.")
-                     
-                     tipo = parts[0].strip()
-                     codigo = parts[1].strip()
-                     nombre = parts[2].strip()
-                     plantel = parts[3].strip()
-                     seccion = parts[4].strip() 
-
-                     # Find or Create user in local database
-                     user = Usuario.query.filter_by(codigo_usuario=codigo).first()
-
-                     if user:
-                         # User exists, update details and last login
-                         print(f"Found existing user: {user.id_usuario}")
-                         user.nombre_completo = nombre
-                         user.tipo_usuario = tipo
-                         user.plantel = plantel
-                         user.seccion = seccion
-                         user.ultimo_login = datetime.now(timezone.utc) # Or db.func.now()
-                         user.is_active = True # Ensure user is active on successful login
-                     else:
-                         # User doesn't exist, create new record
-                         print(f"Creating new user for codigo: {codigo}")
-                         user = Usuario(
-                             codigo_usuario=codigo,
-                             nombre_completo=nombre,
-                             tipo_usuario=tipo,
-                             plantel=plantel,
-                             seccion=seccion,
-                             ultimo_login=datetime.utcnow() # Or db.func.now()
-                             # fecha_registro has default, is_active has default
-                         )
-                         db.session.add(user)
-                     
-                     db.session.commit() # Commit update or new user
-
-                     # Store LOCAL user ID in session
-                     session['user_id'] = user.id_usuario 
-                     session.permanent = True # Make session last longer (configure duration via app.permanent_session_lifetime)
-                     
-                     flash(f'Welcome back, {user.nombre_completo}!', 'success')
-                     log_activity(user_id=user.id_usuario, activity_type='LOGIN_SUCCESS', ip_address=request.remote_addr)
-                     
-                     # Redirect to the originally requested page or default file list
-                     return redirect(next_url or url_for('list_files'))
-
-                 except Exception as e:
-                      db.session.rollback() # Rollback DB changes if parsing/saving failed
-                      print(f"Error processing successful SIIAU response or saving user: {e}")
-                      flash('Login succeeded but failed to process user data.', 'danger')
-                      return render_template('login.html')
-
-        # Handle exceptions during the SOAP call (e.g., connection errors, timeouts, SOAP Faults)
-        except Fault as fault: # Specific Zeep exception for SOAP faults
-             print(f"SIIAU SOAP Fault: {fault}")
-             flash(f'Authentication service error: {fault.message}', 'danger')
-             log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo} - SOAP Fault: {fault.message}")
-             return render_template('login.html')
-        except Exception as e: # Catch other potential errors (network, etc.)
-             print(f"SIIAU Call Error: {e}")
-             flash(f'Error communicating with authentication service: {e}', 'danger')
-             log_activity(user_id=None, activity_type='LOGIN_FAIL', ip_address=request.remote_addr, details=f"Failed login attempt for codigo: {codigo} - Connection/Other Error")
-             return render_template('login.html')
-
-    # --- Handle GET Request (Show Login Form) ---
-    else: # request.method == 'GET'
-        # Pass current year to template for optional footer display
-        current_year = datetime.now(timezone.utc).year 
-        return render_template('login.html', now={'year': current_year})
-
-
-@app.route('/dev_login')
-def dev_login():
-    # IMPORTANT: Only allow this route in debug/development mode for security
-    if not current_app.debug: # current_app.debug directly uses app.config['DEBUG']
-        flash('This login method is only available in development mode.', 'danger')
-        return redirect(url_for('login')) # Redirect to normal login
-
-    DEFAULT_USER_CODIGO = "DEV_USER"
-    DEFAULT_USER_NAME = "Developer Teammate"
-    DEFAULT_USER_TIPO = "E"
-    DEFAULT_USER_PLANTEL = "CUALTOS_DEV" 
-    DEFAULT_USER_SECCION = "DEVELOPER" 
-
-    # Try to find the default user
-    dev_user = Usuario.query.filter_by(codigo_usuario=DEFAULT_USER_CODIGO).first()
-
-    if not dev_user:
-        # If default user doesn't exist, create them
-        print(f"Creating default development user: {DEFAULT_USER_CODIGO}")
-        dev_user = Usuario(
-            codigo_usuario=DEFAULT_USER_CODIGO,
-            nombre_completo=DEFAULT_USER_NAME,
-            tipo_usuario=DEFAULT_USER_TIPO,
-            plantel=DEFAULT_USER_PLANTEL,
-            seccion=DEFAULT_USER_SECCION,
-            # fecha_registro will be set by default
-            ultimo_login=datetime.now(timezone.utc) # Set last login
-        )
-        db.session.add(dev_user)
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error creating dev user: {e}', 'danger')
-            return redirect(url_for('login'))
-    else:
-        # Update last login if user already exists
-        dev_user.ultimo_login = datetime.now(timezone.utc)
-        dev_user.is_active = True # Ensure user is active
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error updating dev user login time: {e}', 'danger')
-            return redirect(url_for('login'))
-
-
-    # Log the user in by setting the session
-    session['user_id'] = dev_user.id_usuario
-    session.permanent = True  # Make session last longer
-
-    flash(f'Successfully logged in as default user: {dev_user.nombre_completo}', 'success')
-
-    # Log this special login activity
-    log_activity(
-        user_id=dev_user.id_usuario,
-        activity_type='DEV_LOGIN_SUCCESS',
-        ip_address=request.remote_addr, # request should be available here
-        details=f"Logged in via /dev_login route as {DEFAULT_USER_CODIGO}"
-    )
-
-    return redirect(url_for('list_files')) # Or your main dashboard/file list route
-
-
-# --- Update Logout ---
-@app.route('/logout')
-@login_required # Add decorator to ensure user is logged in before logging out
-def logout():
-    user_id_to_log = session.get('user_id') 
-    session.pop('user_id', None) 
-    flash('You have been successfully logged out.', 'info')
-    if user_id_to_log: 
-         log_activity(user_id=user_id_to_log, activity_type='LOGOUT', ip_address=request.remote_addr)
-    return redirect(url_for('login')) 
-
-# @app.route('/logout')
-# def logout():
-#     user_id_to_log = session.get('user_id') # Get ID *before* popping
-#     session.pop('user_id', None) 
-#     flash('You were logged out.', 'info')
-#     if user_id_to_log: # Only log if a user was actually logged in
-#          log_activity(user_id=user_id_to_log, activity_type='LOGOUT', ip_address=request.remote_addr)
-#     return redirect(url_for('login'))
-
 # --- File Upload Route ---
 # Modify route definition to accept optional parent folder ID
 @app.route('/upload', defaults={'parent_folder_id': None}, methods=['GET', 'POST'])
@@ -348,6 +117,7 @@ def logout():
 def upload_route(parent_folder_id):
     # --- Import models needed specifically for this route ---
     from models import Documento, Categoria, Carpeta
+    local_s3_client = current_app.s3_client 
     # --------------------------------------------------------
 
     # Optional: Validate parent_folder_id belongs to user if not None (in GET)
@@ -433,13 +203,13 @@ def upload_route(parent_folder_id):
             s3_key = f"user_{user_id}/{uuid.uuid4()}_{original_filename}"
 
             # Check S3 client
-            if not s3_client:
+            if not local_s3_client:
                  flash('S3 client not available. Cannot upload file.', 'danger')
                  return redirect(request.url)
                 
             # 7. Upload to S3
             try:
-                s3_client.upload_fileobj(
+                local_s3_client.upload_fileobj(
                     file,                   
                     app.config['S3_BUCKET'],
                     s3_key,                 
@@ -491,7 +261,7 @@ def upload_route(parent_folder_id):
                 
                 # Attempt to delete orphaned S3 object
                 try:
-                    s3_client.delete_object(Bucket=app.config['S3_BUCKET'], Key=s3_key)
+                    local_s3_client.delete_object(Bucket=app.config['S3_BUCKET'], Key=s3_key)
                 except Exception as s3_e:
                     flash('Database error occurred. Orphaned file might remain in storage.', 'warning')
                     
@@ -695,6 +465,7 @@ def list_files(folder_id):
 def download_file(doc_id):
     # --- Import models needed specifically for this route ---
     from models import Documento # Import here
+    local_s3_client = current_app.s3_client 
     # --------------------------------------------------------
 
     user_id = session.get('user_id')
@@ -712,7 +483,7 @@ def download_file(doc_id):
         s3_key = document.s3_object_key  # Assuming this field contains the S3 key
 
         # 3. Generate a pre-signed URL for the S3 object.
-        presigned_url = s3_client.generate_presigned_url(
+        presigned_url = local_s3_client.generate_presigned_url(
             'get_object',
             Params={'Bucket': app.config['S3_BUCKET'], 'Key': s3_key}, 
             ExpiresIn=3600  # URL expires in 1 hour
@@ -776,6 +547,7 @@ def log_activity(user_id, activity_type, ip_address=None, document_id=None, fold
 def delete_file(doc_id):
     # --- Import models needed specifically for this route ---
     from models import Documento 
+    local_s3_client = current_app.s3_client
     # --------------------------------------------------------
     
     user_id = session.get('user_id')
@@ -797,10 +569,10 @@ def delete_file(doc_id):
         original_filename = document.titulo_original # For flash message
 
         # 3. Delete the object from S3
-        if s3_client: # Check if client is initialized
+        if local_s3_client: # Check if client is initialized
             try:
                 print(f"Deleting S3 object: {s3_key} from bucket {s3_bucket}")
-                s3_client.delete_object(Bucket=s3_bucket, Key=s3_key)
+                local_s3_client.delete_object(Bucket=s3_bucket, Key=s3_key)
                 print("S3 object deleted successfully.")
             except Exception as e:
                 # Log the error, but often proceed to delete DB record anyway

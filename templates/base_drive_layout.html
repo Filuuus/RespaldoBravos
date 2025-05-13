@@ -59,12 +59,12 @@
                             <i class="bi bi-gear-fill me-2"></i>Settings
                         </a>
                         <div class="dropdown-divider"></div>
-                        <a href="{{ url_for('logout') }}" class="dropdown-item">
+                        <a href="{{ url_for('auth_bp.logout') }}" class="dropdown-item">
                             <i class="bi bi-box-arrow-right me-2"></i>Logout
                         </a>
                     </div>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-sm btn-primary">Login</a>
+                    <a href="{{ url_for('auth_bp.login') }}" class="btn btn-sm btn-primary">Login</a>
                 {% endif %}
             </div>
         </header>
