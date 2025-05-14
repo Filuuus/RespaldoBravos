@@ -340,3 +340,24 @@ body {
     font-weight: 500; /* Make current sort label slightly bolder */
     color: #3c4043;
 }
+
+#profileViewModal .modal-body strong.d-block {
+    font-size: 0.8rem;
+    color: #6c757d; /* Muted color for labels */
+    margin-bottom: 0.1rem;
+    text-transform: uppercase;
+}
+
+#profileViewModal .modal-body span {
+    font-size: 0.95rem;
+    color: #212529; /* Main text color */
+}
+
+#profileViewModal #profileModalStorageUsed {
+    font-weight: 500;
+}
+
+#profileViewModal .modal-body hr {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
