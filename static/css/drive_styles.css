@@ -26,6 +26,7 @@ body {
     border-bottom: 1px solid #dadce0;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     position: sticky; 
     top: 0;
     z-index: 1020; 
@@ -33,7 +34,7 @@ body {
 
 /* Burger Menu Icon */
 .burger {
-    position: relative; width: 34px; height: 25px; background: transparent;
+    position: relative; width: 32px; height: 25px; background: transparent;
     cursor: pointer; display: block; margin-right: 15px; flex-shrink: 0;
 }
 .burger input { display: none; }
@@ -42,12 +43,29 @@ body {
     background: #5f6368; border-radius: 9px; opacity: 1; left: 0;
     transform: rotate(0deg); transition: 0.25s ease-in-out;
 }
-.burger span:nth-of-type(1) { top: 0px; transform-origin: left center; }
-.burger span:nth-of-type(2) { top: 50%; transform: translateY(-50%); transform-origin: left center; }
-.burger span:nth-of-type(3) { top: 100%; transform-origin: left center; transform: translateY(-100%); }
-.burger input:checked ~ span:nth-of-type(1) { top: 0px; left: 4px; transform: rotate(45deg); }
-.burger input:checked ~ span:nth-of-type(2) { width: 0%; opacity: 0; }
-.burger input:checked ~ span:nth-of-type(3) { top: calc(100% - 3px); left: 4px; transform: rotate(-45deg); }
+.burger span:nth-of-type(1) {
+    top: 0px; left: 4px; transform: rotate(45deg);
+    transform-origin: left center;
+}
+.burger span:nth-of-type(2) {
+    width: 0%; opacity: 0;
+    top: 50%; transform: translateY(-50%);
+    transform-origin: left center;
+}
+.burger span:nth-of-type(3) {
+    top: calc(100% - 3px); left: 4px; transform: rotate(-45deg);
+    transform-origin: left center;
+}
+/* checked: Burger */
+.burger input:checked ~ span:nth-of-type(1) {
+    top: 0px; left: 0; transform: rotate(0deg);
+}
+.burger input:checked ~ span:nth-of-type(2) {
+    width: 100%; opacity: 1;
+}
+.burger input:checked ~ span:nth-of-type(3) {
+    top: 100%; left: 0; transform: translateY(-100%) rotate(0deg);
+}
 
 /* Global Search Bar */
 .drive-header .global-search-bar {
@@ -340,6 +358,15 @@ body {
     font-weight: 500; /* Make current sort label slightly bolder */
     color: #3c4043;
 }
+
+@media (max-width: 768px) {
+  .drive-sidebar{
+     position: fixed;
+     z-index: 100;
+  }
+}
+
+
 
 #profileViewModal .modal-body strong.d-block {
     font-size: 0.8rem;

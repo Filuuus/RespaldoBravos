@@ -42,6 +42,11 @@
                 <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle" type="button" id="categoryFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Category: <span class="active-filter-label">{{ active_filters.category_name | default('Any') }}</span>
                 </button>
+                {% if active_filters.category_name %}
+                    <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_category='all', filter_modified=request.args.get('filter_modified'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="text-secondary me-3">
+                        <i class="bi bi-x "></i>
+                    </a>
+                {% endif %}
                 <ul class="dropdown-menu" aria-labelledby="categoryFilterDropdown">
                     <li><a class="dropdown-item" href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_category='all', filter_modified=request.args.get('filter_modified'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}">Any Category</a></li>
                     {% for cat in all_available_categories %}
@@ -57,6 +62,11 @@
                 <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle" type="button" id="mimeFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     File Type: <span class="active-filter-label">{{ active_filters.mime_type_name | default('Any') }}</span>
                 </button>
+                {% if active_filters.mime_type_name %}
+                    <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_mime='all', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="text-secondary me-3">
+                        <i class="bi bi-x"></i>
+                    </a>
+                {% endif %}
                 <ul class="dropdown-menu" aria-labelledby="mimeFilterDropdown">
                     <li><a class="dropdown-item" href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_mime='all', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}">Any Type</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_mime='application/pdf', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}">PDF</a></li>
@@ -71,6 +81,11 @@
                 <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle" type="button" id="modifiedFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Modified: <span class="active-filter-label">{{ active_filters.modified_name | default('Any time') }}</span>
                 </button>
+                {% if active_filters.modified_name %}
+                   <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_modified='any', filter_category=request.args.get('filter_category'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="text-secondary me-3">
+                       <i class="bi bi-x"></i>
+                   </a>
+               {% endif %}
                 <ul class="dropdown-menu" aria-labelledby="modifiedFilterDropdown">
                     <li><a class="dropdown-item" href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_modified='any', filter_category=request.args.get('filter_category'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}">Any time</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_modified='today', filter_category=request.args.get('filter_category'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}">Today</a></li>
@@ -85,6 +100,11 @@
                 <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle" type="button" id="periodYearFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Period Year: <span class="active-filter-label">{{ active_filters.period_year_name | default('Any') }}</span>
                 </button>
+                {% if active_filters.period_year_name %}
+                   <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_period_year='all', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_mime=request.args.get('filter_mime'), sort_by=sort_by, sort_dir=sort_dir) }}" class="text-secondary me-3">
+                       <i class="bi bi-x"></i>
+                   </a>
+               {% endif %}
                 <ul class="dropdown-menu" aria-labelledby="periodYearFilterDropdown">
                     <li><a class="dropdown-item" href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_period_year='all', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_mime=request.args.get('filter_mime'), sort_by=sort_by, sort_dir=sort_dir) }}">Any Year</a></li>
                     {% for year in all_available_period_years %} {# Passed from backend #}
@@ -94,6 +114,12 @@
                     {% endfor %}
                 </ul>
             </div>
+            <div class="d-inline-block">
+                <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_category='all', filter_mime='all', filter_modified='any', filter_period_year='all', sort_by=sort_by, sort_dir=sort_dir) }}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                    <i class="bi me-1"></i> Clear All Filters
+                </a>
+            </div>
+
         </div>
 
         {# Sorting Control #}
@@ -129,7 +155,7 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th scope="col">
+                            <th scope="col name-col">
                                 {% set next_dir_name = 'desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc' %}
                                 <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, sort_by='name', sort_dir=next_dir_name, filter_category=request.args.get('filter_category'), filter_mime=request.args.get('filter_mime'), filter_modified=request.args.get('filter_modified'), filter_period_year=request.args.get('filter_period_year')) }}">Name</a>
                                 {% if sort_by == 'name' %}<i class="bi bi-sort-{{ 'alpha-up' if sort_dir == 'asc' else 'alpha-down' }}"></i>{% endif %}
