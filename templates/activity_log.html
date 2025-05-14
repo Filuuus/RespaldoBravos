@@ -16,8 +16,8 @@
              <h1>My Activity Log</h1>
              <div>
                  {# Link back to the main file list #}
-                 <a href="{{ url_for('list_files') }}" class="btn btn-sm btn-outline-secondary">Back to Files</a>
-                 <a href="{{ url_for('logout') }}" class="btn btn-sm btn-secondary">Logout</a>
+                 <a href="{{ url_for('main_bp.list_files') }}" class="btn btn-sm btn-outline-secondary">Back to Files</a>
+                 <a href="{{ url_for('auth_bp.logout') }}" class="btn btn-sm btn-secondary">Logout</a>
              </div>
         </div>
        <hr>
@@ -73,14 +73,14 @@
             <ul class="pagination justify-content-center">
                 {# Previous Page Link #}
                 <li class="page-item {% if not log_pagination.has_prev %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('activity_log', page=log_pagination.prev_num) if log_pagination.has_prev else '#' }}">Previous</a>
+                    <a class="page-link" href="{{ url_for('main_bp.activity_log', page=log_pagination.prev_num) if log_pagination.has_prev else '#' }}">Previous</a>
                 </li>
 
                 {# Page Number Links #}
                 {% for page_num in log_pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
                     {% if page_num %}
                         <li class="page-item {% if page_num == log_pagination.page %}active{% endif %}">
-                            <a class="page-link" href="{{ url_for('activity_log', page=page_num) }}">{{ page_num }}</a>
+                            <a class="page-link" href="{{ url_for('main_bp.activity_log', page=page_num) }}">{{ page_num }}</a>
                         </li>
                     {% else %}
                         <li class="page-item disabled"><span class="page-link">...</span></li>
@@ -89,7 +89,7 @@
 
                 {# Next Page Link #}
                 <li class="page-item {% if not log_pagination.has_next %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('activity_log', page=log_pagination.next_num) if log_pagination.has_next else '#' }}">Next</a>
+                    <a class="page-link" href="{{ url_for('main_bp.activity_log', page=log_pagination.next_num) if log_pagination.has_next else '#' }}">Next</a>
                 </li>
             </ul>
         </nav>

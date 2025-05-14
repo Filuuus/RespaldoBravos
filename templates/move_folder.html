@@ -27,7 +27,7 @@
         {% endwith %}
 
         {# Form posts back to the same URL #}
-        <form method="post" action="{{ url_for('move_folder', folder_id=folder_to_move.id_carpeta) }}"> 
+        <form method="post" action="{{ url_for('folder_actions_bp.move_folder', folder_id=folder_to_move.id_carpeta) }}"> 
              <div class="mb-3">
                 <label for="destination_folder" class="form-label">New Parent Folder:</label>
                 <select name="destination_folder" id="destination_folder" class="form-select">
@@ -48,7 +48,7 @@
 
             <button type="submit" class="btn btn-primary">Move Folder</button>
             {# Link back to the folder's CURRENT parent folder #}
-            <a href="{{ url_for('list_files', folder_id=folder_to_move.id_carpeta_padre if folder_to_move.id_carpeta_padre is not none else None) }}" class="btn btn-secondary">Cancel</a> 
+            <a href="{{ url_for('main_bp.list_files', folder_id=folder_to_move.id_carpeta_padre if folder_to_move.id_carpeta_padre is not none else None) }}" class="btn btn-secondary">Cancel</a> 
         </form>
 
     </div>
