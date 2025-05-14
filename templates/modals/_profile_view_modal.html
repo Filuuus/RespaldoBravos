@@ -1,0 +1,57 @@
+<div class="modal fade" id="profileViewModal" tabindex="-1" aria-labelledby="profileViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="profileViewModalLabel">User Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if current_user %}
+                    <div class="mb-3">
+                        <strong class="d-block text-muted">Full Name:</strong>
+                        <span>{{ current_user.nombre_completo | default('N/A') }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong class="d-block text-muted">User Code (University ID):</strong>
+                        <span>{{ current_user.codigo_usuario | default('N/A') }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong class="d-block text-muted">User Type:</strong>
+                        <span>{{ current_user.tipo_usuario | default('N/A') }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong class="d-block text-muted">Campus / School:</strong>
+                        <span>{{ current_user.plantel | default('N/A') }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong class="d-block text-muted">Section / Department:</strong>
+                        <span>{{ current_user.seccion | default('N/A') }}</span>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <strong class="d-block text-muted">Storage Used:</strong>
+                        <span id="profileModalStorageUsed">Loading...</span>
+                    </div>
+                    <div class="mb-1">
+                        <small class="text-muted">
+                            Registered since: {{ current_user.fecha_registro.strftime('%Y-%m-%d %H:%M') if current_user.fecha_registro else 'N/A' }} UTC
+                        </small>
+                    </div>
+                    <div class="mb-1">
+                        <small class="text-muted">
+                            Last login: {{ current_user.ultimo_login.strftime('%Y-%m-%d %H:%M') if current_user.ultimo_login else 'N/A' }} UTC
+                        </small>
+                    </div>
+                {% else %}
+                    <p>User information not available.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                {# If you later add an "Edit Profile" button that links to a full page:
+                   <a href="{{ url_for('main_bp.edit_profile_page') }}" class="btn btn-primary">Edit Full Profile</a>
+                #}
+            </div>
+        </div>
+    </div>
+</div>
