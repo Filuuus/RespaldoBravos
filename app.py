@@ -1,27 +1,18 @@
-import os
 import boto3 
-import uuid 
 import math
-from datetime import datetime, timedelta, timezone 
+import os
 from dotenv import load_dotenv
 from extensions import db 
 from flask import Flask
-from flask import render_template, request, redirect, url_for, flash, session, current_app, jsonify, send_file
 from flask_migrate import Migrate
-from functools import wraps 
-from models import ActividadUsuario, Usuario
-from sqlalchemy import asc, desc, text, or_, text, func as sql_func
 from werkzeug.exceptions import RequestEntityTooLarge
-from werkzeug.utils import secure_filename
-from zeep import Client, Settings, Transport
-from zeep.exceptions import Fault 
+from zeep import Client, Settings
 
-from routes.auth_routes import auth_bp
-from routes.main_routes import main_bp
-from routes.document_actions_routes import doc_actions_bp
 from routes.api_routes import api_bp
+from routes.auth_routes import auth_bp
+from routes.document_actions_routes import doc_actions_bp
 from routes.folder_actions_routes import folder_actions_bp
-from utils import log_activity, login_required
+from routes.main_routes import main_bp
 
 load_dotenv() 
 
@@ -45,11 +36,11 @@ app.config['SIIAU_VALIDA_KEY'] = os.environ.get('SIIAU_VALIDA_KEY')
 
 app.config['ITEMS_PER_PAGE'] = 30 
 
-app.register_blueprint(auth_bp)
-app.register_blueprint(main_bp)
-app.register_blueprint(doc_actions_bp)
 app.register_blueprint(api_bp)
+app.register_blueprint(auth_bp)
+app.register_blueprint(doc_actions_bp)
 app.register_blueprint(folder_actions_bp)
+app.register_blueprint(main_bp)
 
 # --- 2. Initialize Extensions that NEED config (like DB) ---
 db.init_app(app) 
@@ -91,9 +82,6 @@ if app.config['SIIAU_WSDL_URL']:
 else:
     print("SIIAU WSDL URL missing, Zeep client not initialized.")
 
-# --- Models (Import after app and db are configured if models depend on them at import time) ---
-from models import ActividadUsuario, Usuario, Documento, Carpeta, Categoria
-
 # --- Jinja Custom Filter for File Size ---
 def format_file_size(size_bytes):
     """Converts bytes to KB, MB, GB, etc."""
@@ -123,12 +111,9 @@ def inject_current_user():
 @app.errorhandler(413)
 @app.errorhandler(RequestEntityTooLarge)
 def handle_file_too_large(e):
-    # This error handler doesn't need models, but importing Flask functions here is okay too
-    from flask import flash # Moved flash import here just for this handler
+    from flask import flash
     max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
     flash(f'File is too large. Maximum allowed size is {max_size_mb:.0f} MB.') 
-    # Note: Redirecting from an error handler can sometimes be tricky, 
-    # returning an error response is often preferred.
     return f"File too large (Limit: {max_size_mb:.0f} MB)", 413 
 
 # --- Main entry point ---
