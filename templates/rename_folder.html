@@ -27,7 +27,7 @@
         {% endwith %}
 
         {# Form posts back to the same URL but with POST method #}
-        <form method="post" action="{{ url_for('rename_folder', folder_id=folder.id_carpeta) }}"> 
+        <form method="post" action="{{ url_for('folder_actions_bp.rename_folder', folder_id=folder.id_carpeta) }}"> 
              <div class="mb-3">
                 <label for="new_folder_name" class="form-label">New Folder Name</label>
                 {# Pre-fill with current name #}

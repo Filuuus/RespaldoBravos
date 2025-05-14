@@ -163,9 +163,9 @@
                             <td>{{ folder.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if folder.fecha_modificacion else 'N/A' }}</td>
                             <td>--</td>
                             <td>
-                                <a href="{{ url_for('rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn" title="Rename Folder"><i class="bi bi-pencil-fill"></i></a>
-                                <a href="{{ url_for('move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn" title="Move Folder"><i class="bi bi-folder-symlink"></i></a>
-                                <form method="POST" action="{{ url_for('delete_folder', folder_id=folder.id_carpeta) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this folder? It must be empty.');">
+                                <a href="{{ url_for('folder_actions_bp.rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn" title="Rename Folder"><i class="bi bi-pencil-fill"></i></a>
+                                <a href="{{ url_for('folder_actions_bp.move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn" title="Move Folder"><i class="bi bi-folder-symlink"></i></a>
+                                <form method="POST" action="{{ url_for('folder_actions_bp.delete_folder', folder_id=folder.id_carpeta) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this folder? It must be empty.');">
                                     <button type="submit" class="btn btn-sm btn-outline-danger action-btn" title="Delete Folder (Must be empty)"><i class="bi bi-trash-fill"></i></button>
                                 </form>
                             </td>
@@ -227,11 +227,11 @@
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="folderActionsDropdown-{{folder.id_carpeta}}">
-                                        <li><a class="dropdown-item" href="{{ url_for('rename_folder', folder_id=folder.id_carpeta) }}"><i class="bi bi-pencil-fill me-2"></i>Rename</a></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('move_folder', folder_id=folder.id_carpeta) }}"><i class="bi bi-folder-symlink me-2"></i>Move</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('folder_actions_bp.rename_folder', folder_id=folder.id_carpeta) }}"><i class="bi bi-pencil-fill me-2"></i>Rename</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('folder_actions_bp.move_folder', folder_id=folder.id_carpeta) }}"><i class="bi bi-folder-symlink me-2"></i>Move</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form method="POST" action="{{ url_for('delete_folder', folder_id=folder.id_carpeta) }}" class="d-inline delete-folder-form">
+                                            <form method="POST" action="{{ url_for('folder_actions_bp.delete_folder', folder_id=folder.id_carpeta) }}" class="d-inline delete-folder-form">
                                                 <button type="button" class="dropdown-item text-danger delete-folder-btn"><i class="bi bi-trash-fill me-2"></i>Delete</button>
                                             </form>
                                         </li>

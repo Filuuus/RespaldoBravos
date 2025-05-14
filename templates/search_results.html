@@ -32,8 +32,8 @@
                         </td>
                         <td>{{ folder.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if folder.fecha_modificacion else 'N/A' }}</td>
                         <td>
-                            <a href="{{ url_for('rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Rename</a>
-                            <a href="{{ url_for('move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Move</a>
+                            <a href="{{ url_for('folder_actions_bp.rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Rename</a>
+                            <a href="{{ url_for('folder_actions_bp.move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Move</a>
                             {# Delete might be too aggressive for search results, consider carefully #}
                         </td>
                     </tr>

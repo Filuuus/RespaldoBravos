@@ -56,7 +56,7 @@
                     <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
                 </form>
                 
-                <form method="POST" action="{{ url_for('create_folder', parent_folder_id=current_folder_id if current_folder_id else None) }}" class="d-inline-flex me-2 mb-1">
+                <form method="POST" action="{{ url_for('folder_actions_bp.create_folder', parent_folder_id=current_folder_id if current_folder_id else None) }}" class="d-inline-flex me-2 mb-1">
                     <input type="text" name="folder_name" class="form-control form-control-sm me-1" placeholder="New folder name" required style="width: auto;">
                     <button type="submit" class="btn btn-sm btn-success text-nowrap">Create Folder</button> 
                 </form>
@@ -125,11 +125,11 @@
                     <td>--</td> {# Folders have no size here #}
                     <td>
                         {# --- START: Folder Actions --- #}
-                        <a href="{{ url_for('rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-warning action-btn" title="Rename Folder">Rename</a>
+                        <a href="{{ url_for('folder_actions_bp.rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-warning action-btn" title="Rename Folder">Rename</a>
                         {# Add Move Link for Folders #}
-                        <a href="{{ url_for('move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-secondary action-btn" title="Move Folder">Move</a>
+                        <a href="{{ url_for('folder_actions_bp.move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-secondary action-btn" title="Move Folder">Move</a>
                         {# Delete Form for Folders #}
-                        <form method="POST" action="{{ url_for('delete_folder', folder_id=folder.id_carpeta) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this folder? It must be empty.');">
+                        <form method="POST" action="{{ url_for('folder_actions_bp.delete_folder', folder_id=folder.id_carpeta) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this folder? It must be empty.');">
                              <button type="submit" class="btn btn-sm btn-danger action-btn" title="Delete Folder (Must be empty)">Delete</button>
                         </form>
                         {# --- END: Folder Actions --- #}
