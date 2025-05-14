@@ -359,40 +359,10 @@ body {
     color: #3c4043;
 }
 
-@media (max-width: 780px) {
+@media (max-width: 768px) {
   .drive-sidebar{
      position: fixed;
      z-index: 100;
   }
-  /*.drive-sidebar.collapsed {
-    background-color: #f8f9fa; padding: 15px; width: 250px;
-    min-height: calc(100vh - 60px); transform: translateX(0); margin-left: 0;
-    transition: transform 0.3s ease-in-out, margin-left 0.3s ease-in-out, width 0.3s ease-in-out;
-    flex-shrink: 0; border-right: 1px solid #e0e0e0;}
-    .drive-sidebar { transform: translateX(-100%); margin-left: -250px; }
-   .burger input:checked ~  span:nth-of-type(1) {
-        top: 0px; left: 4px; transform: rotate(45deg);
-        transform-origin: left center;
-    }
-    .burger input:checked ~  span:nth-of-type(2) {
-        width: 0%; opacity: 0;
-        top: 50%; transform: translateY(-50%);
-        transform-origin: left center;
-    }
-    .burger input:checked ~ span:nth-of-type(3) {
-        top: calc(100% - 3px); left: 4px; transform: rotate(-45deg);
-        transform-origin: left center;
-    }
-    .burger span:nth-of-type(1) {
-        top: 0px; left: 0; transform: rotate(0deg);
-    }
-    .burger span:nth-of-type(2) {
-        top: 50%; width: 100%; opacity: 1;
-    }
-    .burger span:nth-of-type(3) {
-        top: 100%; left: 0; transform: translateY(-100%) rotate(0deg);
-    }*/
-
-
 }
 
