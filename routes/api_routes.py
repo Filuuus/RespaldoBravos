@@ -1,7 +1,6 @@
 # RespaldoBravos/routes/api_routes.py
 from flask import Blueprint, jsonify, session, current_app
 from models import Categoria, Carpeta, Usuario, Documento # Import necessary models
-# Corrected import from utils.py
 from utils import login_required, format_file_size # Changed to format_file_size_simple
 from sqlalchemy import func as sql_func
 from extensions import db
@@ -34,11 +33,9 @@ def get_user_folders_api():
 @login_required
 def get_user_storage_info_api():
     user_id = session.get('user_id')
-    # @login_required handles if user_id is not in session.
-    
+
     try:
         # Calculate total size of documents for the user
-        # --- MODIFIED TO USE .scalar() ---
         total_size_bytes_value = db.session.query(
             sql_func.sum(Documento.file_size)
         ).filter(
