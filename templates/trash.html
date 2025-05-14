@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../static/css/drive_styles.css">
-    <link rel="stylesheet" href="../styles/styles_papelera.css" />
-    <title>Papelera</title>
-  </head>
-  <body>
-    <div class="drive-container">
+{% extends "base_drive_layout.html" %}
+
+{% block title %}Trash {% endblock %}
+
+{% block content %}
       <!-- header y aside definido en base_drive -->
 
     <div class="container_papelera">
@@ -105,6 +99,3 @@
         <button class="btn2 btn-primary">Recuperar</button>
       </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
-</html>
