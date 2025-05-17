@@ -271,28 +271,28 @@ body {
 
 /* --- Grid View - File Card Styling (Light Theme) --- */
 .drive-file-card .card-img-top.drive-file-card-preview {
-    height: 130px; display: flex; align-items: center; justify-content: center;
-    background-color: #f8f9fa; border-bottom: 1px solid #dadce0;
+    height: 130px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa; 
+    border-bottom: 1px solid #dadce0;
     border-top-left-radius: calc(12px - 1px); 
     border-top-right-radius: calc(12px - 1px);
+    overflow: hidden; /* Important to contain the image */
 }
-.drive-file-card .card-img-top .bi { font-size: 2.5rem; color: #5f6368; }
-.drive-file-card .card-img-top .bi-file-image-fill { color: #1a73e8; }
-.drive-file-card .card-body { padding: 0.5rem 0.75rem; }
-.drive-file-card .card-title {
-    font-size: 0.875rem; font-weight: 400; color: #3c4043;
-    margin-bottom: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+
+/* Styling for the actual image preview */
+.drive-file-card-image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Fills the area, might crop. Use 'contain' to see full image. */
+    display: block; /* Remove extra space below image if any */
 }
-.drive-file-card .card-title a { color: inherit; text-decoration: none; }
-.drive-file-card .card-title a:hover { color: #0b57d0; }
-.drive-file-card .card-text.small { font-size: 0.75rem; color: #5f6368; }
-.drive-file-card .bi-star-fill { font-size: 0.75rem; }
-.drive-file-card .card-footer {
-    padding: 0.25rem 0.75rem; background-color: transparent; border-top: none;
-}
-.drive-file-card .card-body .stretched-link::after {
-    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
-    z-index: 1; content: "";
+
+.drive-file-card .card-img-top .bi { /* Fallback icon styling */
+    font-size: 2.5rem; 
+    color: #5f6368;
 }
 
 /* --- Filter Chips and Sorting Controls --- */
