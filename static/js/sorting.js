@@ -16,12 +16,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (viewType === 'grid') {
             fileFolderContainer.classList.remove('list-view-active');
             fileFolderContainer.classList.add('grid-view-active');
-            
+
             listViewBtn.classList.remove('active');
             gridViewBtn.classList.add('active');
-            
+
             if (gridSortControl) gridSortControl.style.display = 'inline-block'; // Show sort for grid
             localStorage.setItem('driveViewPreference', 'grid');
+            renderPdfPreviews(); // Call PDF renderer when grid view is activated
         } else { // Default to list view
             fileFolderContainer.classList.remove('grid-view-active');
             fileFolderContainer.classList.add('list-view-active');
@@ -29,7 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
             gridViewBtn.classList.remove('active');
             listViewBtn.classList.add('active');
 
-            if (gridSortControl) gridSortControl.style.display = 'inline-block'; // Also show for list, or 'none' if only for grid
+            // Decide if sort control is also for list view or should be hidden
+            if (gridSortControl) gridSortControl.style.display = 'inline-block';
             localStorage.setItem('driveViewPreference', 'list');
         }
     }
@@ -48,11 +50,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // On page load, check for stored preference or default to list view
-    // This check should only run if we are on a page that has the fileFolderContainer
     if (fileFolderContainer) {
-        const preferredView = localStorage.getItem('driveViewPreference');
-        // setView will also handle the initial display of gridSortControl
-        setView(preferredView || 'list'); // Default to list view if no preference
+        const preferredView = localStorage.getItem('driveViewPreference') || 'list';
+        setView(preferredView); // This will call renderPdfPreviews if view is 'grid'
     }
     // --- End List/Grid View Toggle ---
 
@@ -66,14 +66,10 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             const sortBy = this.dataset.sortBy;
             const sortDir = this.dataset.sortDir;
-            
+
             const currentUrl = new URL(window.location.href);
             currentUrl.searchParams.set('sort_by', sortBy);
             currentUrl.searchParams.set('sort_dir', sortDir);
-            
-            // The filter parameters are already part of currentUrl.searchParams
-            // if they were in the URL when the page loaded.
-            // No need to explicitly add them again unless you are constructing from scratch.
 
             window.location.href = currentUrl.toString();
         });
@@ -82,9 +78,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize sort label on page load based on URL parameters
     if (currentSortLabel) {
         const urlParams = new URLSearchParams(window.location.search);
-        const sortByParam = urlParams.get('sort_by') || 'name'; // Default to 'name' if not present
-        const sortDirParam = urlParams.get('sort_dir') || 'asc';   // Default to 'asc' if not present
-        let initialLabel = 'Name'; 
+        const sortByParam = urlParams.get('sort_by') || 'name';
+        const sortDirParam = urlParams.get('sort_dir') || 'asc';
+        let initialLabel = 'Name';
 
         if (sortByParam === 'name') {
             initialLabel = `Name (${sortDirParam === 'asc' ? 'A-Z' : 'Z-A'})`;
@@ -97,7 +93,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         currentSortLabel.textContent = initialLabel;
 
-        // Also set the 'active' class on the correct sort dropdown item
         sortOptions.forEach(opt => {
             if (opt.dataset.sortBy === sortByParam && opt.dataset.sortDir === sortDirParam) {
                 opt.classList.add('active');
@@ -107,5 +102,90 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     // --- End Sorting Control ---
+
+    // --- PDF.js Preview Rendering Logic ---
+    function renderPdfPreviews() {
+        const pdfCanvases = document.querySelectorAll('canvas.drive-file-card-pdf-preview');
+
+        if (typeof pdfjsLib === 'undefined' || !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+            console.error('PDF.js or its worker is not loaded correctly. Ensure pdf.min.js and pdf.worker.min.js are included and workerSrc is set.');
+            pdfCanvases.forEach(canvas => {
+                const parentPreviewArea = canvas.parentElement;
+                if (parentPreviewArea) {
+                    let fallbackMsg = parentPreviewArea.querySelector('.pdf-render-fallback');
+                    if (!fallbackMsg) {
+                        fallbackMsg = document.createElement('small');
+                        fallbackMsg.className = 'text-muted pdf-render-fallback';
+                        fallbackMsg.textContent = 'PDF preview unavailable';
+                        parentPreviewArea.appendChild(fallbackMsg);
+                    }
+                }
+            });
+            return;
+        }
+
+        pdfCanvases.forEach(async (canvas) => {
+            const pdfUrl = canvas.dataset.pdfUrl;
+            const spinnerId = canvas.id.replace('pdf-preview-', 'pdf-spinner-');
+            const spinnerElement = document.getElementById(spinnerId);
+
+            if (!pdfUrl) { return; }
+            if (canvas.dataset.rendered === 'true') { return; }
+
+            if (spinnerElement) spinnerElement.style.display = 'block';
+            canvas.style.display = 'none';
+
+            try {
+                const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1); // Get the first page
+
+                const viewport = page.getViewport({ scale: 1 });
+                const parentElement = canvas.parentElement;
+                let scale = 1;
+                if (parentElement) {
+                    const desiredWidth = parentElement.clientWidth;
+                    const desiredHeight = parentElement.clientHeight;
+                    if (desiredWidth > 0 && desiredHeight > 0) {
+                        if (desiredWidth / viewport.width < desiredHeight / viewport.height) {
+                            scale = desiredWidth / viewport.width;
+                        } else {
+                            scale = desiredHeight / viewport.height;
+                        }
+                    }
+                }
+                scale = Math.min(scale, 1.5); // Cap scale
+
+                const scaledViewport = page.getViewport({ scale: scale });
+                canvas.height = scaledViewport.height;
+                canvas.width = scaledViewport.width;
+
+                const renderContext = {
+                    canvasContext: canvas.getContext('2d'),
+                    viewport: scaledViewport
+                };
+                await page.render(renderContext).promise;
+
+                canvas.style.display = 'block';
+                canvas.dataset.rendered = 'true';
+
+            } catch (reason) {
+                console.error('Error rendering PDF:', pdfUrl, reason);
+                const parentPreviewArea = canvas.parentElement;
+                if (parentPreviewArea) {
+                    let errorMsg = parentPreviewArea.querySelector('.pdf-render-error');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('small');
+                        errorMsg.className = 'text-danger pdf-render-error';
+                        parentPreviewArea.appendChild(errorMsg);
+                    }
+                    errorMsg.textContent = 'Preview failed';
+                }
+            } finally {
+                if (spinnerElement) spinnerElement.style.display = 'none';
+            }
+        });
+    }
+    // --- End PDF.js Preview Rendering Logic ---]
 
 }); 

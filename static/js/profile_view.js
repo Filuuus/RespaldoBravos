@@ -1,17 +1,13 @@
 document.addEventListener('DOMContentLoaded', function() {
-
-    // --- Profile View Modal Functionality ---
+    // --- Profile View Modal - Storage Info ---
     const profileViewModalElement = document.getElementById('profileViewModal');
     const profileModalStorageUsedSpan = document.getElementById('profileModalStorageUsed');
 
     async function fetchAndDisplayStorageInfo() {
         if (!profileModalStorageUsedSpan) return;
-
-        profileModalStorageUsedSpan.textContent = 'Loading...'; // Initial text
-
+        profileModalStorageUsedSpan.textContent = 'Loading...';
         try {
-            // Ensure this API route is correctly defined in your api_routes.py
-            const response = await fetch('/api/get_user_storage_info'); 
+            const response = await fetch('/api/get_user_storage_info');
             if (!response.ok) {
                 console.error('Failed to fetch storage info:', response.statusText);
                 profileModalStorageUsedSpan.textContent = 'Could not load storage info.';
@@ -31,8 +27,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (profileViewModalElement) {
         profileViewModalElement.addEventListener('show.bs.modal', function(event) {
-
-            // Fetch and display storage usage
             fetchAndDisplayStorageInfo();
         });
     }
