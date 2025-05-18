@@ -21,22 +21,31 @@ def index_redirect():
 @login_required
 def home_dashboard():
     user_id = session.get('user_id')
-    local_s3_client = current_app.s3_client # Get S3 client from app context
+    local_s3_client = current_app.s3_client 
 
-    favorite_documents_raw = Documento.query.filter_by(id_usuario=user_id, favorito=True).order_by(Documento.fecha_modificacion.desc()).limit(10).all()
-    recent_documents_raw = Documento.query.filter_by(id_usuario=user_id).order_by(Documento.fecha_modificacion.desc()).limit(10).all()
+    # Fetch Recent Folders
+    try:
+        recent_folders = Carpeta.query.filter_by(id_usuario=user_id)\
+            .order_by(desc(Carpeta.fecha_modificacion))\
+            .limit(6).all() 
+    except Exception as e:
+        current_app.logger.error(f"Error fetching recent folders for home dashboard: {e}")
+        recent_folders = []
+
+    favorite_documents_raw = Documento.query.filter_by(id_usuario=user_id, favorito=True).order_by(Documento.fecha_modificacion.desc()).limit(6).all()
+    recent_documents_raw = Documento.query.filter_by(id_usuario=user_id).order_by(Documento.fecha_modificacion.desc()).limit(12).all()
     
-    def process_docs_for_preview(docs_list):
+    def process_docs_for_preview_and_actions(docs_list):
         processed_docs = []
         for doc in docs_list:
-            doc_data = { # Convert to dict or use a class that allows adding attributes
+            doc_data = {
                 "id_documento": doc.id_documento, 
                 "titulo_original": doc.titulo_original,
                 "mime_type": doc.mime_type, 
                 "file_size": doc.file_size, 
                 "favorito": doc.favorito,
                 "fecha_modificacion": doc.fecha_modificacion, 
-                "categoria": doc.categoria, # Keep the relationship object for template
+                "categoria": doc.categoria, 
                 "id_categoria": doc.id_categoria, 
                 "id_carpeta": doc.id_carpeta,
                 "periodo_inicio": doc.periodo_inicio, 
@@ -44,7 +53,7 @@ def home_dashboard():
                 "descripcion": doc.descripcion, 
                 "s3_bucket": doc.s3_bucket, 
                 "s3_object_key": doc.s3_object_key,
-                "preview_url": None # Initialize
+                "preview_url": None
             }
             if doc.mime_type and (doc.mime_type.startswith('image/') or doc.mime_type == 'application/pdf') and local_s3_client:
                 try:
@@ -59,8 +68,8 @@ def home_dashboard():
             processed_docs.append(doc_data)
         return processed_docs
 
-    favorite_documents = process_docs_for_preview(favorite_documents_raw)
-    recent_documents = process_docs_for_preview(recent_documents_raw)
+    favorite_documents = process_docs_for_preview_and_actions(favorite_documents_raw)
+    recent_documents = process_docs_for_preview_and_actions(recent_documents_raw)
     
     active_filters_default = {
         'category_name': 'Any', 'mime_type_name': 'Any', 
@@ -68,6 +77,7 @@ def home_dashboard():
     }
     return render_template(
         'home_dashboard.html',
+        recent_folders=recent_folders, 
         favorite_documents=favorite_documents,
         recent_documents=recent_documents,
         current_page='home',
