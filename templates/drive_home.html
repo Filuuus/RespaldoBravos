@@ -8,14 +8,16 @@
     <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
         <nav aria-label="breadcrumb" class="drive-breadcrumb-nav">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main_bp.list_files', folder_id=None) }}">My Files</a></li>
+                <li class="breadcrumb-item folder-drop-target" data-folder-id="">
+                    <a href="{{ url_for('main_bp.list_files', folder_id=None) }}">My Files</a>
+                </li>
                 {% for crumb in breadcrumbs %}
                     {% if loop.last %}
                         <li class="breadcrumb-item active" aria-current="page">
                             {{ crumb.nombre }}
                         </li>
                     {% else %}
-                        <li class="breadcrumb-item">
+                        <li class="breadcrumb-item folder-drop-target" data-folder-id="{{ crumb.id }}">
                             <a href="{{ url_for('main_bp.list_files', folder_id=crumb.id) }}">{{ crumb.nombre }}</a>
                         </li>
                     {% endif %}
@@ -180,7 +182,10 @@
                     </thead>
                     <tbody>
                         {% for folder in folders %}
-                        <tr>
+                        <tr class="folder-drop-target folder-draggable" draggable="true" 
+                            data-folder-id="{{ folder.id_carpeta }}"
+                            data-current-parent-id="{{ folder.id_carpeta_padre if folder.id_carpeta_padre is not none else '' }}"
+                            data-item-type="folder">
                             <td>
                                 <i class="bi bi-folder-fill me-2" style="color: #ffcc00;"></i>
                                 <a href="{{ url_for('main_bp.list_files', folder_id=folder.id_carpeta) }}">{{ folder.nombre }}</a>
@@ -205,10 +210,13 @@
                         </tr>
                         {% endfor %}
                         {% for doc in documents %}
-                        <tr>
+                        <tr class="file-draggable" draggable="true" 
+                            data-doc-id="{{ doc.id_documento }}"
+                            data-current-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
+                            data-item-type="file">
                             <td>
                                 <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2" style="color: #6c757d;"></i>
-                                {{ doc.titulo_original }} {# Or display_name if you implement that #}
+                                {{ doc.titulo_original }}
                                 {% if doc.favorito %}<i class="bi bi-star-fill text-warning ms-1" title="Favorite"></i>{% endif %}
                             </td>
                             <td>{{ doc.categoria.nombre if doc.categoria else (doc.mime_type if doc.mime_type else 'File') }}</td>
@@ -253,7 +261,11 @@
                 <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
                     {% for folder in folders %}
                     <div class="col">
-                        <div class="card h-auto drive-item-card drive-folder-card-light shadow-sm">
+                    <div class="card h-auto drive-item-card drive-folder-card-light shadow-sm folder-drop-target folder-draggable" 
+                             draggable="true"
+                             data-folder-id="{{ folder.id_carpeta }}"
+                             data-current-parent-id="{{ folder.id_carpeta_padre if folder.id_carpeta_padre is not none else '' }}"
+                             data-item-type="folder">
                             <div class="card-body">
                                 <a href="{{ url_for('main_bp.list_files', folder_id=folder.id_carpeta) }}" class="drive-folder-link-main">
                                     <i class="bi bi-folder-fill drive-folder-icon"></i>
@@ -301,7 +313,11 @@
                 <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
                     {% for doc in documents %}
                     <div class="col">
-                        <div class="card h-100 drive-item-card drive-file-card shadow-sm">
+                        <div class="card h-100 drive-item-card drive-file-card shadow-sm file-draggable" 
+                             draggable="true" 
+                             data-doc-id="{{ doc.id_documento }}"
+                             data-current-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
+                             data-item-type="file">
                             <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none" title="Download {{ doc.titulo_original }}">
                                 <div class="card-img-top d-flex align-items-center justify-content-center bg-light drive-file-card-preview">
                                     {% if doc.mime_type and doc.mime_type.startswith('image/') and doc.preview_url %}
