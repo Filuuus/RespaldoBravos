@@ -4,44 +4,107 @@
 
 {% block content %}
 <div class="container-fluid mt-3">
-    <h1 class="h3 mb-4">Home Dashboard</h1>
+    {# Breadcrumb-style title for Home #}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <nav aria-label="breadcrumb" class="drive-breadcrumb-nav">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main_bp.list_files', folder_id=None) }}">My Files</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Home</li>
+            </ol>
+        </nav>
+    </div>
+
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category | replace('error', 'danger') | replace('success', 'success') | default('info') }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
     {# Favorites Section #}
     <section class="mb-5">
         <h4 class="mb-3"><i class="bi bi-star-fill me-2 text-warning"></i>Favorites</h4>
         {% if favorite_documents %}
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
-                {% for doc in favorite_documents %}
+            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
+                {% for doc in favorite_documents %} {# doc is now a dictionary from process_docs_for_preview_and_actions #}
                 <div class="col">
-                    <div class="card h-100 shadow-sm drive-item-card">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2 fs-4 text-secondary"></i>
-                                <h6 class="card-title mb-0 text-truncate" title="{{ doc.titulo_original }}">
-                                    {# Link to download, not stretched if other buttons are present #}
-                                    <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
-                                </h6>
+                    <div class="card h-100 drive-item-card drive-file-card shadow-sm">
+                        <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none" title="Download {{ doc.titulo_original }}">
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light drive-file-card-preview">
+                                {% if doc.mime_type and doc.mime_type.startswith('image/') and doc.preview_url %}
+                                    <img src="{{ doc.preview_url }}" alt="{{ doc.titulo_original }}" class="img-fluid drive-file-card-image-preview">
+                                {% elif doc.mime_type == 'application/pdf' and doc.preview_url %}
+                                    <canvas id="pdf-preview-home-fav-{{ doc.id_documento }}" class="drive-file-card-pdf-preview" data-pdf-url="{{ doc.preview_url }}"></canvas>
+                                    <div class="pdf-loading-spinner" id="pdf-spinner-home-fav-{{ doc.id_documento }}" style="display: none;">
+                                        <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                            <span class="visually-hidden">Loading PDF...</span>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <i class="bi {{ 
+                                        'bi-file-earmark-pdf-fill text-danger' if doc.mime_type == 'application/pdf' 
+                                        else 'bi-file-earmark-word-fill text-primary' if doc.mime_type and ('word' in doc.mime_type or doc.mime_type.endswith('document')) 
+                                        else 'bi-file-earmark-excel-fill text-success' if doc.mime_type and ('excel' in doc.mime_type or doc.mime_type.endswith('sheet')) 
+                                        else 'bi-file-earmark-ppt-fill text-warning' if doc.mime_type and ('powerpoint' in doc.mime_type or doc.mime_type.endswith('presentation')) 
+                                        else 'bi-file-earmark-zip-fill text-info' if doc.mime_type and ('zip' in doc.mime_type or 'rar' in doc.mime_type)
+                                        else 'bi-file-earmark-play-fill text-primary' if doc.mime_type and doc.mime_type.startswith('video/')
+                                        else 'bi-file-earmark-music-fill text-info' if doc.mime_type and doc.mime_type.startswith('audio/')
+                                        else 'bi-file-earmark-code-fill text-secondary' if doc.mime_type and ('javascript' in doc.mime_type or 'html' in doc.mime_type or 'css' in doc.mime_type or 'python' in doc.mime_type)
+                                        else 'bi-file-earmark-text-fill' 
+                                    }} display-1 text-secondary"></i>
+                                {% endif %}
                             </div>
-                            <p class="card-text text-muted small mb-1">
-                                Modified: {{ doc.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if doc.fecha_modificacion else 'N/A' }}
-                            </p>
-                            <p class="card-text text-muted small">
-                                Size: {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
-                            </p>
-                            <div class="mt-auto pt-2 d-flex justify-content-end">
-                                <a href="#" class="btn btn-sm btn-outline-warning action-btn me-2 edit-file-btn"
-                                   data-bs-toggle="modal"
-                                   data-bs-target="#editFileModal"
-                                   data-doc-id="{{ doc.id_documento }}"
-                                   data-doc-title-original="{{ doc.titulo_original }}"
-                                   data-doc-description="{{ doc.descripcion or '' }}"
-                                   data-doc-category-id="{{ doc.id_categoria if doc.id_categoria is not none else '' }}"
-                                   data-doc-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
-                                   data-doc-periodo-inicio="{{ doc.periodo_inicio.strftime('%Y-%m-%d') if doc.periodo_inicio else '' }}"
-                                   data-doc-periodo-fin="{{ doc.periodo_fin.strftime('%Y-%m-%d') if doc.periodo_fin else '' }}"
-                                   data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}"
-                                   title="Edit Metadata"><i class="bi bi-pencil-square"></i> Edit</a>
-                                {# Add other actions like Move if desired #}
+                        </a>
+                        <div class="card-body py-2 px-3">
+                            <h6 class="card-title text-truncate mb-1" title="{{ doc.titulo_original }}">
+                                <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
+                            </h6>
+                            <div class="d-flex justify-content-between align-items-center file-info-actions">
+                                <p class="card-text small text-muted mb-0 file-meta-info">
+                                    {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
+                                    {% if doc.favorito %}<i class="bi bi-star-fill text-warning ms-1" title="Favorite"></i>{% endif %}
+                                </p>
+                                <div class="dropdown drive-file-action-kebab-container">
+                                    <button class="btn btn-sm btn-link text-muted p-0 drive-file-action-kebab" type="button" id="homeFavKebab-{{doc.id_documento}}" data-bs-toggle="dropdown" aria-expanded="false" aria-label="File actions">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="homeFavKebab-{{doc.id_documento}}">
+                                        <li>
+                                            <a class="dropdown-item edit-file-btn" href="#"
+                                               data-bs-toggle="modal" data-bs-target="#editFileModal"
+                                               data-doc-id="{{ doc.id_documento }}" 
+                                               data-doc-title-original="{{ doc.titulo_original }}"
+                                               data-doc-description="{{ doc.descripcion or '' }}" 
+                                               data-doc-category-id="{{ doc.id_categoria if doc.id_categoria is not none else '' }}"
+                                               data-doc-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
+                                               data-doc-periodo-inicio="{{ doc.periodo_inicio.strftime('%Y-%m-%d') if doc.periodo_inicio else '' }}"
+                                               data-doc-periodo-fin="{{ doc.periodo_fin.strftime('%Y-%m-%d') if doc.periodo_fin else '' }}"
+                                               data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}">
+                                                <i class="bi bi-pencil-square me-2"></i>Edit
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item move-file-btn" href="#"
+                                               data-bs-toggle="modal" data-bs-target="#moveFileModal"
+                                               data-doc-id="{{ doc.id_documento }}" data-doc-name="{{ doc.titulo_original }}"
+                                               data-current-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}">
+                                                <i class="bi bi-folder-symlink me-2"></i>Move
+                                            </a>
+                                        </li>
+                                        <li><a class="dropdown-item" href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}"><i class="bi bi-download me-2"></i>Download</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form method="POST" action="{{ url_for('doc_actions_bp.delete_file', doc_id=doc.id_documento) }}" class="delete-file-form-grid" onsubmit="return confirm('Are you sure you want to delete this file?');">
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash-fill me-2"></i>Delete</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -55,40 +118,84 @@
         {% endif %}
     </section>
 
-    {# Recents Section (similar update for its edit button) #}
     <section>
         <h4 class="mb-3"><i class="bi bi-clock-history me-2 text-info"></i>Recently Modified</h4>
         {% if recent_documents %}
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
-                {% for doc in recent_documents %}
+            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
+                {% for doc in recent_documents %} 
                 <div class="col">
-                    <div class="card h-100 shadow-sm drive-item-card">
-                         <div class="card-body d-flex flex-column">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2 fs-4 text-secondary"></i>
-                                <h6 class="card-title mb-0 text-truncate" title="{{ doc.titulo_original }}">
-                                    <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
-                                </h6>
+                    <div class="card h-100 drive-item-card drive-file-card shadow-sm">
+                        <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none" title="Download {{ doc.titulo_original }}">
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light drive-file-card-preview">
+                                {% if doc.mime_type and doc.mime_type.startswith('image/') and doc.preview_url %}
+                                    <img src="{{ doc.preview_url }}" alt="{{ doc.titulo_original }}" class="img-fluid drive-file-card-image-preview">
+                                {% elif doc.mime_type == 'application/pdf' and doc.preview_url %}
+                                    <canvas id="pdf-preview-home-rec-{{ doc.id_documento }}" class="drive-file-card-pdf-preview" data-pdf-url="{{ doc.preview_url }}"></canvas>
+                                     <div class="pdf-loading-spinner" id="pdf-spinner-home-rec-{{ doc.id_documento }}" style="display: none;">
+                                        <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                            <span class="visually-hidden">Loading PDF...</span>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <i class="bi {{ 
+                                        'bi-file-earmark-pdf-fill text-danger' if doc.mime_type == 'application/pdf' 
+                                        else 'bi-file-earmark-word-fill text-primary' if doc.mime_type and ('word' in doc.mime_type or doc.mime_type.endswith('document')) 
+                                        else 'bi-file-earmark-excel-fill text-success' if doc.mime_type and ('excel' in doc.mime_type or doc.mime_type.endswith('sheet')) 
+                                        else 'bi-file-earmark-ppt-fill text-warning' if doc.mime_type and ('powerpoint' in doc.mime_type or doc.mime_type.endswith('presentation')) 
+                                        else 'bi-file-earmark-zip-fill text-info' if doc.mime_type and ('zip' in doc.mime_type or 'rar' in doc.mime_type)
+                                        else 'bi-file-earmark-play-fill text-primary' if doc.mime_type and doc.mime_type.startswith('video/')
+                                        else 'bi-file-earmark-music-fill text-info' if doc.mime_type and doc.mime_type.startswith('audio/')
+                                        else 'bi-file-earmark-code-fill text-secondary' if doc.mime_type and ('javascript' in doc.mime_type or 'html' in doc.mime_type or 'css' in doc.mime_type or 'python' in doc.mime_type)
+                                        else 'bi-file-earmark-text-fill' 
+                                    }} display-1 text-secondary"></i>
+                                {% endif %}
                             </div>
-                            <p class="card-text text-muted small mb-1">
-                                Modified: {{ doc.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if doc.fecha_modificacion else 'N/A' }}
-                            </p>
-                             <p class="card-text text-muted small">
-                                Size: {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
-                            </p>
-                            <div class="mt-auto pt-2 d-flex justify-content-end">
-                               <a href="#" class="btn btn-sm btn-outline-warning action-btn me-2 edit-file-btn"
-                                   data-bs-toggle="modal"
-                                   data-bs-target="#editFileModal"
-                                   data-doc-id="{{ doc.id_documento }}"
-                                   data-doc-title-original="{{ doc.titulo_original }}"
-                                   data-doc-description="{{ doc.descripcion or '' }}"
-                                   data-doc-category-id="{{ doc.id_categoria if doc.id_categoria is not none else '' }}"
-                                   data-doc-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
-                                   data-doc-periodo-inicio="{{ doc.periodo_inicio.strftime('%Y-%m-%d') if doc.periodo_inicio else '' }}"
-                                   data-doc-periodo-fin="{{ doc.periodo_fin.strftime('%Y-%m-%d') if doc.periodo_fin else '' }}"
-                                   data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}"
-                                   title="Edit Metadata"><i class="bi bi-pencil-square"></i> Edit</a>
+                        </a>
+                         <div class="card-body py-2 px-3">
+                            <h6 class="card-title text-truncate mb-1" title="{{ doc.titulo_original }}">
+                                <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
+                            </h6>
+                            <div class="d-flex justify-content-between align-items-center file-info-actions">
+                                <p class="card-text small text-muted mb-0 file-meta-info">
+                                   {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
+                                   {% if doc.favorito %}<i class="bi bi-star-fill text-warning ms-1" title="Favorite"></i>{% endif %}
+                                </p>
+                                <div class="dropdown drive-file-action-kebab-container">
+                                    <button class="btn btn-sm btn-link text-muted p-0 drive-file-action-kebab" type="button" id="homeRecKebab-{{doc.id_documento}}" data-bs-toggle="dropdown" aria-expanded="false" aria-label="File actions">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="homeRecKebab-{{doc.id_documento}}">
+                                        <li>
+                                            <a class="dropdown-item edit-file-btn" href="#"
+                                               data-bs-toggle="modal" data-bs-target="#editFileModal"
+                                               data-doc-id="{{ doc.id_documento }}" 
+                                               data-doc-title-original="{{ doc.titulo_original }}"
+                                               data-doc-description="{{ doc.descripcion or '' }}" 
+                                               data-doc-category-id="{{ doc.id_categoria if doc.id_categoria is not none else '' }}"
+                                               data-doc-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
+                                               data-doc-periodo-inicio="{{ doc.periodo_inicio.strftime('%Y-%m-%d') if doc.periodo_inicio else '' }}"
+                                               data-doc-periodo-fin="{{ doc.periodo_fin.strftime('%Y-%m-%d') if doc.periodo_fin else '' }}"
+                                               data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}">
+                                                <i class="bi bi-pencil-square me-2"></i>Edit
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item move-file-btn" href="#"
+                                               data-bs-toggle="modal" data-bs-target="#moveFileModal"
+                                               data-doc-id="{{ doc.id_documento }}" data-doc-name="{{ doc.titulo_original }}"
+                                               data-current-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}">
+                                                <i class="bi bi-folder-symlink me-2"></i>Move
+                                            </a>
+                                        </li>
+                                        <li><a class="dropdown-item" href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}"><i class="bi bi-download me-2"></i>Download</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form method="POST" action="{{ url_for('doc_actions_bp.delete_file', doc_id=doc.id_documento) }}" class="delete-file-form-grid" onsubmit="return confirm('Are you sure you want to delete this file?');">
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash-fill me-2"></i>Delete</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -101,19 +208,48 @@
             </div>
         {% endif %}
     </section>
-
 </div>
 {% endblock %}
 
 {% block scripts %}
-{{ super() }} {# Include scripts from base_drive_layout if any #}
+{{ super() }}
+{# PDF.js rendering for dashboard items will need to be triggered #}
+{# Ensure your drive_scripts.js looks for canvases on this page too, or add specific script here #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if the function is available (it should be if drive_scripts.js loaded)
+    if (typeof window.renderPdfPreviews === 'function') {
+        // Call it specifically for this page after a short delay to ensure DOM is fully ready
+        // and other scripts might have finished any initial DOM manipulations.
+        setTimeout(window.renderPdfPreviews, 150); // Increased delay slightly for safety
+    } else {
+        console.error("renderPdfPreviews function not found. Ensure drive_scripts.js is loaded before this script block and defines window.renderPdfPreviews.");
+    }
+
+    // Your existing delete confirmation logic for file cards on dashboard
+    const deleteFileFormsDashboard = document.querySelectorAll('.grid-section-documents .delete-file-form-grid, .favorites-section .delete-file-form-grid');
+    deleteFileFormsDashboard.forEach(form => {
+        const deleteButton = form.querySelector('.dropdown-item.text-danger');
+        if (deleteButton && !deleteButton.dataset.listenerAttached) { 
+            deleteButton.addEventListener('click', function (event) {
+                event.preventDefault(); 
+                event.stopPropagation(); 
+                if (confirm('Are you sure you want to delete this file?')) {
+                    form.submit(); 
+                }
+            });
+            deleteButton.dataset.listenerAttached = 'true';
+        }
+    });
+});
+</script>
 <style>
-/* Optional: Styles specific to home_dashboard.html cards */
-.drive-item-card .card-title a {
-    color: #212529; /* Ensure link color is standard text color */
+/* Optional: Styles specific to home_dashboard.html cards if needed */
+/* .drive-item-card .card-title a {
+    color: #212529; 
 }
 .drive-item-card .card-title a:hover {
-    color: #0d6efd; /* Standard link hover blue */
+    color: #0d6efd; 
     text-decoration: underline;
 }
 .drive-item-card {
@@ -122,6 +258,13 @@
 .drive-item-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+} */
+/* Ensure preview area height is consistent if using same CSS as drive_home */
+/* This is now controlled by the main drive_styles.css for consistency */
+/*
+.drive-file-card .card-img-top.drive-file-card-preview {
+    height: 150px; 
 }
+*/
 </style>
 {% endblock %}
