@@ -1,0 +1,30 @@
+<div class="modal fade" id="renameFolderModal" tabindex="-1" aria-labelledby="renameFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renameFolderModalLabel">Rename Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            {# The action URL will be set dynamically by JavaScript #}
+            <form id="renameFolderForm" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="folder_id" id="renameFolderModalFolderId">
+                    
+                    <div class="mb-3">
+                        <label for="renameFolderModalCurrentName" class="form-label">Current Name</label>
+                        <input type="text" class="form-control" id="renameFolderModalCurrentName" readonly disabled>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="renameFolderModalNewName" class="form-label">New Folder Name*</label>
+                        <input type="text" class="form-control" name="new_folder_name" id="renameFolderModalNewName" required autofocus>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Rename</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -28,12 +28,12 @@
                     <tr>
                         <td>
                             <i class="bi bi-folder-fill me-2" style="color: #ffcc00;"></i>
-                            <a href="{{ url_for('list_files', folder_id=folder.id_carpeta) }}">{{ folder.nombre }}</a>
+                            <a href="{{ url_for('main_bp.list_files', folder_id=folder.id_carpeta) }}">{{ folder.nombre }}</a>
                         </td>
                         <td>{{ folder.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if folder.fecha_modificacion else 'N/A' }}</td>
                         <td>
-                            <a href="{{ url_for('rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Rename</a>
-                            <a href="{{ url_for('move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Move</a>
+                            <a href="{{ url_for('folder_actions_bp.rename_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Rename</a>
+                            <a href="{{ url_for('folder_actions_bp.move_folder', folder_id=folder.id_carpeta) }}" class="btn btn-sm btn-outline-secondary action-btn">Move</a>
                             {# Delete might be too aggressive for search results, consider carefully #}
                         </td>
                     </tr>
@@ -67,9 +67,9 @@
                         <td>{{ doc.fecha_carga.strftime('%Y-%m-%d %H:%M') if doc.fecha_carga else 'N/A' }}</td>
                         <td>{{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}</td>
                         <td>
-                            <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-info action-btn">Download</a>
-                            <a href="{{ url_for('edit_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-warning action-btn">Edit</a>
-                            <a href="{{ url_for('move_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-secondary action-btn">Move</a>
+                            <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-info action-btn">Download</a>
+                            <a href="{{ url_for('doc_actions_bp.edit_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-warning action-btn">Edit</a>
+                            <a href="{{ url_for('doc_actions_bp.move_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-secondary action-btn">Move</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -78,6 +78,6 @@
         {% endif %}
     {% endif %}
     <hr>
-    <a href="{{ url_for('list_files') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to My Files</a>
+    <a href="{{ url_for('main_bp.list_files') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to My Files</a>
 </div>
 {% endblock %}

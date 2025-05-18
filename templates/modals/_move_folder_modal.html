@@ -1,0 +1,31 @@
+<div class="modal fade" id="moveFolderModal" tabindex="-1" aria-labelledby="moveFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moveFolderModalLabel">Move Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            {# The action URL will be set dynamically by JavaScript #}
+            <form id="moveFolderForm" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="folder_id_to_move" id="moveFolderModalFolderIdInput">
+                    
+                    <p>Move folder: <strong id="moveFolderModalCurrentName"></strong></p>
+                    
+                    <div class="mb-3">
+                        <label for="moveFolderModalDestinationFolderSelect" class="form-label">Select New Parent Folder*</label>
+                        <select name="destination_folder" id="moveFolderModalDestinationFolderSelect" class="form-select" required>
+                            <option value="" disabled selected>Loading folders...</option> 
+                            {# Options will be populated by JavaScript from /api/get_user_folders,
+                               excluding the current folder and its descendants. #}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Move Folder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

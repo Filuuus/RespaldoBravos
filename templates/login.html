@@ -30,7 +30,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form method="POST" action="{{ url_for('login') }}">
+        <form method="POST" action="{{ url_for('auth_bp.login') }}">
           
           {# Hidden input to preserve 'next' URL for redirection after login #}
           <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">

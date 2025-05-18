@@ -21,7 +21,7 @@
 
             {# Global Search Bar - Adapted from Inicio.html #}
             <div class="global-search-bar">
-                <form class="form" method="GET" action="{{ url_for('global_search_route') }}"> 
+                <form class="form" method="GET" action="{{ url_for('main_bp.global_search_route') }}"> 
                     <button type="submit">
                         <svg width="17" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="search">
                             <path d="M7.667 12.667A5.333 5.333 0 107.667 2a5.333 5.333 0 000 10.667zM14.334 14l-2.9-2.9" stroke="currentColor" stroke-width="1.333" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -33,7 +33,7 @@
 
             <div class="user-menu-container"> {# Renamed for clarity, matches styles_Inicio.css concept #}
                 {% if session.user_id %}
-                    <i id="profileMenuIcon" class="bi bi-person-circle profile-icon" style="font-size: 2rem; cursor: pointer; color: #5f6368;"></i>                    {# Replace 'default_avatar.png' with an actual placeholder image in your static/img folder, or use user-specific one if available #}
+                    <i id="profileMenuIcon" class="bi bi-person-circle profile-icon" style="font-size: 2rem; cursor: pointer; color: #5f6368;"></i>                
 
                     <div class="profile-dropdown" id="profileDropdownMenu"> {# Renamed for clarity #}
                         <div class="dropdown-header">
@@ -49,22 +49,22 @@
                             {% endif %}
                         </div>
                         <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item"> {# TODO: Link to actual profile page later #}
+                        <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#profileViewModal">
                             <i class="bi bi-person-circle me-2"></i>Profile
                         </a>
-                        <a href="{{ url_for('activity_log') }}" class="dropdown-item">
+                        <a href="{{ url_for('main_bp.activity_log') }}" class="dropdown-item">
                             <i class="bi bi-list-check me-2"></i>Activity
                         </a>
                         <a href="#" class="dropdown-item"> {# Placeholder for settings #}
                             <i class="bi bi-gear-fill me-2"></i>Settings
                         </a>
                         <div class="dropdown-divider"></div>
-                        <a href="{{ url_for('logout') }}" class="dropdown-item">
+                        <a href="{{ url_for('auth_bp.logout') }}" class="dropdown-item">
                             <i class="bi bi-box-arrow-right me-2"></i>Logout
                         </a>
                     </div>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-sm btn-primary">Login</a>
+                    <a href="{{ url_for('auth_bp.login') }}" class="btn btn-sm btn-primary">Login</a>
                 {% endif %}
             </div>
         </header>
@@ -100,12 +100,12 @@
             <nav>
                 <ul>
                     <li>
-                        <a href="{{ url_for('home_dashboard') }}" class="{{ 'active' if current_page == 'home' else '' }}">
+                        <a href="{{ url_for('main_bp.home_dashboard') }}" class="{{ 'active' if current_page == 'home' else '' }}">
                             <i class="bi bi-house-door-fill me-2"></i>Home
                         </a>
                     </li>
                     <li>
-                        <a href="{{ url_for('list_files', folder_id=None) }}" class="{{ 'active' if current_page == 'my_files' or (not current_page and not current_folder_id) else '' }}">
+                        <a href="{{ url_for('main_bp.list_files', folder_id=None) }}" class="{{ 'active' if current_page == 'my_files' or (not current_page and not current_folder_id) else '' }}">
                             <i class="bi bi-hdd-stack-fill me-2"></i>My Files
                         </a>
                     </li>
@@ -113,7 +113,7 @@
                     <li><a href="#"><i class="bi bi-clock-history me-2"></i>Recents</a></li> {# Placeholder - distinct from home page recents #}
                     <li><a href="#"><i class="bi bi-star-fill me-2"></i>Favorites</a></li> {# Placeholder - distinct from home page favorites #}
                     <li>
-                        <a href="{{ url_for('activity_log') }}" class="{{ 'active' if current_page == 'activity_log' else '' }}">
+                        <a href="{{ url_for('main_bp.activity_log') }}" class="{{ 'active' if current_page == 'activity_log' else '' }}">
                             <i class="bi bi-activity me-2"></i>Activity Log
                         </a>
                     </li>
@@ -132,12 +132,33 @@
 {% include 'modals/_upload_file_modal.html' %}
 {% include 'modals/_create_folder_modal.html' %}
 {% include 'modals/_edit_file_modal.html' %}
+{% include 'modals/_profile_view_modal.html' %}
+{% include 'modals/_rename_folder_modal.html' %}
+{% include 'modals/_move_file_modal.html' %} 
+{% include 'modals/_move_folder_modal.html' %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='js/drive_scripts.js') }}"></script>
-<script src="{{ url_for('static', filename='js/upload-file.js') }}"></script>
-<script src="{{ url_for('static', filename='js/edit_file.js') }}"></script>
-<script src="{{ url_for('static', filename='js/sorting.js') }}"></script>
-{% block scripts %}{% endblock %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        } else {
+            console.error("PDF.js library (pdfjsLib) not loaded.");
+        }
+    </script>
+
+    <script src="{{ url_for('static', filename='js/drive_scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/upload-file.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/edit_file.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/profile_view.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sorting.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/delete_folder.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/rename_folder.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/move_file.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/move_folder.js') }}"></script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

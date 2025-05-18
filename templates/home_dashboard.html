@@ -19,7 +19,7 @@
                                 <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2 fs-4 text-secondary"></i>
                                 <h6 class="card-title mb-0 text-truncate" title="{{ doc.titulo_original }}">
                                     {# Link to download, not stretched if other buttons are present #}
-                                    <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
+                                    <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
                                 </h6>
                             </div>
                             <p class="card-text text-muted small mb-1">
@@ -67,7 +67,7 @@
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi {{ 'bi-file-earmark-text-fill' if not doc.mime_type.startswith('image/') else 'bi-file-image-fill' }} me-2 fs-4 text-secondary"></i>
                                 <h6 class="card-title mb-0 text-truncate" title="{{ doc.titulo_original }}">
-                                    <a href="{{ url_for('download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
+                                    <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
                                 </h6>
                             </div>
                             <p class="card-text text-muted small mb-1">
