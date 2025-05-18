@@ -148,7 +148,7 @@
         {% endif %}
     {% endwith %}
 
-    <div id="file-folder-container" class="list-view-active"> {# Default class #}
+    <div id="file-folder-container" class="list-view-active">
         {# List View (Table) #}
         <div class="view-section" id="list-view-section">
             {% if folders or documents %}
@@ -247,10 +247,9 @@
 
         {# Grid View #}
         <div class="view-section" id="grid-view-section">
-            {# Section for Folders in Grid View #}
+                        {# Section for Folders in Grid View #}
             {% if folders %}
             <div class="grid-section-folders mb-4">
-                {# --- UPDATED for 6 columns on xl, etc. --- #}
                 <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
                     {% for folder in folders %}
                     <div class="col">
@@ -296,15 +295,14 @@
             </div>
             {% endif %}
 
-            {# Section for Documents in Grid View - WITH IMAGE & PDF PREVIEW LOGIC #}
+            {# Section for Documents in Grid View - UPDATED LAYOUT #}
             {% if documents %}
             <div class="grid-section-documents">
-                 {# --- UPDATED for 6 columns on xl, etc. --- #}
                 <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
-                    {% for doc in documents %} {# documents is now a list of dicts #}
+                    {% for doc in documents %}
                     <div class="col">
                         <div class="card h-100 drive-item-card drive-file-card shadow-sm">
-                            <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">
+                            <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none" title="Download {{ doc.titulo_original }}">
                                 <div class="card-img-top d-flex align-items-center justify-content-center bg-light drive-file-card-preview">
                                     {% if doc.mime_type and doc.mime_type.startswith('image/') and doc.preview_url %}
                                         <img src="{{ doc.preview_url }}" alt="{{ doc.titulo_original }}" class="img-fluid drive-file-card-image-preview">
@@ -316,7 +314,6 @@
                                             </div>
                                         </div>
                                     {% else %}
-                                        {# Fallback to file type icon #}
                                         <i class="bi {{ 
                                             'bi-file-earmark-pdf-fill text-danger' if doc.mime_type == 'application/pdf' 
                                             else 'bi-file-earmark-word-fill text-primary' if doc.mime_type and ('word' in doc.mime_type or doc.mime_type.endswith('document')) 
@@ -335,33 +332,51 @@
                                 <h6 class="card-title text-truncate mb-1" title="{{ doc.titulo_original }}">
                                     <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="text-decoration-none">{{ doc.titulo_original }}</a>
                                 </h6>
-                                <p class="card-text small text-muted mb-0">
-                                    {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
-                                    {% if doc.favorito %}<i class="bi bi-star-fill text-warning ms-1" title="Favorite"></i>{% endif %}
-                                </p>
+                                {# --- NEW: File info line with kebab menu --- #}
+                                <div class="d-flex justify-content-between align-items-center file-info-actions">
+                                    <p class="card-text small text-muted mb-0">
+                                        {{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}
+                                        {% if doc.favorito %}<i class="bi bi-star-fill text-warning ms-1" title="Favorite"></i>{% endif %}
+                                    </p>
+                                    <div class="dropdown drive-file-action-kebab-container">
+                                        <button class="btn btn-sm btn-link text-muted p-0 drive-file-action-kebab" type="button" id="fileActionKebab-{{doc.id_documento}}" data-bs-toggle="dropdown" aria-expanded="false" aria-label="File actions">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="fileActionKebab-{{doc.id_documento}}">
+                                            <li>
+                                                <a class="dropdown-item edit-file-btn" href="#"
+                                                   data-bs-toggle="modal" data-bs-target="#editFileModal"
+                                                   data-doc-id="{{ doc.id_documento }}" 
+                                                   data-doc-title-original="{{ doc.titulo_original }}"
+                                                   data-doc-description="{{ doc.descripcion or '' }}" 
+                                                   data-doc-category-id="{{ doc.id_categoria if doc.id_categoria is not none else '' }}"
+                                                   data-doc-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
+                                                   data-doc-periodo-inicio="{{ doc.periodo_inicio.strftime('%Y-%m-%d') if doc.periodo_inicio else '' }}"
+                                                   data-doc-periodo-fin="{{ doc.periodo_fin.strftime('%Y-%m-%d') if doc.periodo_fin else '' }}"
+                                                   data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}">
+                                                    <i class="bi bi-pencil-square me-2"></i>Edit
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item move-file-btn" href="#"
+                                                   data-bs-toggle="modal" data-bs-target="#moveFileModal"
+                                                   data-doc-id="{{ doc.id_documento }}" data-doc-name="{{ doc.titulo_original }}"
+                                                   data-current-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}">
+                                                    <i class="bi bi-folder-symlink me-2"></i>Move
+                                                </a>
+                                            </li>
+                                            <li><a class="dropdown-item" href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}"><i class="bi bi-download me-2"></i>Download</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('doc_actions_bp.delete_file', doc_id=doc.id_documento) }}" class="delete-file-form-grid">
+                                                    <button type="button" class="dropdown-item text-danger delete-file-btn-grid"><i class="bi bi-trash-fill me-2"></i>Delete</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="card-footer bg-transparent border-top-0 text-end pb-2 pt-1 d-flex justify-content-end">
-                                 <a href="#" class="btn btn-sm btn-link text-muted p-1 edit-file-btn"
-                                       data-bs-toggle="modal" data-bs-target="#editFileModal"
-                                       data-doc-id="{{ doc.id_documento }}" 
-                                       data-doc-title-original="{{ doc.titulo_original }}"
-                                       data-doc-description="{{ doc.descripcion or '' }}" 
-                                       data-doc-category-id="{{ doc.id_categoria if doc.id_categoria is not none else '' }}"
-                                       data-doc-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
-                                       data-doc-periodo-inicio="{{ doc.periodo_inicio.strftime('%Y-%m-%d') if doc.periodo_inicio else '' }}"
-                                       data-doc-periodo-fin="{{ doc.periodo_fin.strftime('%Y-%m-%d') if doc.periodo_fin else '' }}"
-                                       data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}"
-                                       title="Edit Metadata"><i class="bi bi-pencil-square"></i>
-                                 </a>
-                                 <a href="#" class="btn btn-sm btn-link text-muted p-1 move-file-btn"
-                                   data-bs-toggle="modal"
-                                   data-bs-target="#moveFileModal"
-                                   data-doc-id="{{ doc.id_documento }}"
-                                   data-doc-name="{{ doc.titulo_original }}"
-                                   data-current-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
-                                   title="Move File"><i class="bi bi-folder-symlink"></i>
-                                 </a>
-                            </div>
+                            {# Removed old card-footer as actions are now in card-body #}
                         </div>
                     </div>
                     {% endfor %}
@@ -369,7 +384,6 @@
             </div>
             {% endif %}
             
-            {# Handle empty state for grid view if neither folders nor documents exist #}
             {% if not folders and not documents %}
                 <div class="alert alert-info mt-3" role="alert">
                     This folder is empty.
