@@ -15,7 +15,7 @@ main_bp = Blueprint('main_bp', __name__)
 @main_bp.route('/')
 @login_required
 def index_redirect():
-    return redirect(url_for('.home_dashboard'))
+    return redirect(url_for('.home_dashboard')) # Use . for same blueprint
 
 @main_bp.route('/home')
 @login_required
@@ -23,8 +23,17 @@ def home_dashboard():
     user_id = session.get('user_id')
     local_s3_client = current_app.s3_client 
 
-    favorite_documents_raw = Documento.query.filter_by(id_usuario=user_id, favorito=True).order_by(Documento.fecha_modificacion.desc()).limit(10).all()
-    recent_documents_raw = Documento.query.filter_by(id_usuario=user_id).order_by(Documento.fecha_modificacion.desc()).limit(10).all()
+    # Fetch Recent Folders
+    try:
+        recent_folders = Carpeta.query.filter_by(id_usuario=user_id)\
+            .order_by(desc(Carpeta.fecha_modificacion))\
+            .limit(6).all() 
+    except Exception as e:
+        current_app.logger.error(f"Error fetching recent folders for home dashboard: {e}")
+        recent_folders = []
+
+    favorite_documents_raw = Documento.query.filter_by(id_usuario=user_id, favorito=True).order_by(Documento.fecha_modificacion.desc()).limit(6).all()
+    recent_documents_raw = Documento.query.filter_by(id_usuario=user_id).order_by(Documento.fecha_modificacion.desc()).limit(12).all()
     
     def process_docs_for_preview_and_actions(docs_list):
         processed_docs = []
@@ -37,16 +46,15 @@ def home_dashboard():
                 "favorito": doc.favorito,
                 "fecha_modificacion": doc.fecha_modificacion, 
                 "categoria": doc.categoria, 
-                "id_categoria": doc.id_categoria,
-                "id_carpeta": doc.id_carpeta,    
+                "id_categoria": doc.id_categoria, 
+                "id_carpeta": doc.id_carpeta,
                 "periodo_inicio": doc.periodo_inicio, 
-                "periodo_fin": doc.periodo_fin,       
-                "descripcion": doc.descripcion,       
-                "s3_bucket": doc.s3_bucket,          
-                "s3_object_key": doc.s3_object_key,   
-                "preview_url": None 
+                "periodo_fin": doc.periodo_fin,
+                "descripcion": doc.descripcion, 
+                "s3_bucket": doc.s3_bucket, 
+                "s3_object_key": doc.s3_object_key,
+                "preview_url": None
             }
-            # Generate pre-signed URL for image AND PDF previews
             if doc.mime_type and (doc.mime_type.startswith('image/') or doc.mime_type == 'application/pdf') and local_s3_client:
                 try:
                     preview_s3_url = local_s3_client.generate_presigned_url(
@@ -69,8 +77,9 @@ def home_dashboard():
     }
     return render_template(
         'home_dashboard.html',
-        favorite_documents=favorite_documents, 
-        recent_documents=recent_documents,   
+        recent_folders=recent_folders, 
+        favorite_documents=favorite_documents,
+        recent_documents=recent_documents,
         current_page='home',
         current_folder_id=None,
         active_filters=active_filters_default
