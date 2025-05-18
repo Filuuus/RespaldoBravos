@@ -36,15 +36,15 @@
 
     {# Filter Chips and Sorting Controls #}
     <div class="drive-filter-sort-controls d-flex justify-content-start align-items-center mb-3 pt-1 border-top flex-wrap">
-        <div class="drive-filter-chips me-auto">
+        <div class="drive-filter-chips me-auto d-flex align-items-center flex-wrap"> {# Added d-flex align-items-center flex-wrap #}
             {# Category Filter #}
-            <div class="dropdown d-inline-block me-2 mb-1">
-                <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle" type="button" id="categoryFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="filter-chip-wrapper d-inline-flex align-items-center me-2 mb-1"> {# Wrapper for chip + clear #}
+                <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle {% if active_filters.category_name and active_filters.category_name != 'Any' %}filter-chip-active{% endif %}" type="button" id="categoryFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Category: <span class="active-filter-label">{{ active_filters.category_name | default('Any') }}</span>
                 </button>
-                {% if active_filters.category_name %}
-                    <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_category='all', filter_modified=request.args.get('filter_modified'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="text-secondary me-3">
-                        <i class="bi bi-x "></i>
+                {% if active_filters.category_name and active_filters.category_name != 'Any' %}
+                    <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_category='all', filter_modified=request.args.get('filter_modified'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="btn btn-sm btn-link text-secondary p-0 ms-1 clear-filter-btn" title="Clear Category Filter">
+                        <i class="bi bi-x-circle"></i>
                     </a>
                 {% endif %}
                 <ul class="dropdown-menu" aria-labelledby="categoryFilterDropdown">
@@ -58,13 +58,13 @@
             </div>
 
             {# MIME Type (File Type) Filter #}
-            <div class="dropdown d-inline-block me-2 mb-1">
-                <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle" type="button" id="mimeFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="filter-chip-wrapper d-inline-flex align-items-center me-2 mb-1">
+                <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle {% if active_filters.mime_type_name and active_filters.mime_type_name != 'Any' %}filter-chip-active{% endif %}" type="button" id="mimeFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     File Type: <span class="active-filter-label">{{ active_filters.mime_type_name | default('Any') }}</span>
                 </button>
-                {% if active_filters.mime_type_name %}
-                    <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_mime='all', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="text-secondary me-3">
-                        <i class="bi bi-x"></i>
+                {% if active_filters.mime_type_name and active_filters.mime_type_name != 'Any' %}
+                    <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_mime='all', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="btn btn-sm btn-link text-secondary p-0 ms-1 clear-filter-btn" title="Clear File Type Filter">
+                        <i class="bi bi-x-circle"></i>
                     </a>
                 {% endif %}
                 <ul class="dropdown-menu" aria-labelledby="mimeFilterDropdown">
@@ -78,13 +78,13 @@
             </div>
 
             {# Modified Date Filter #}
-            <div class="dropdown d-inline-block me-2 mb-1">
-                <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle" type="button" id="modifiedFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="filter-chip-wrapper d-inline-flex align-items-center me-2 mb-1">
+                <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle {% if active_filters.modified_name and active_filters.modified_name != 'Any time' %}filter-chip-active{% endif %}" type="button" id="modifiedFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Modified: <span class="active-filter-label">{{ active_filters.modified_name | default('Any time') }}</span>
                 </button>
-                {% if active_filters.modified_name %}
-                   <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_modified='any', filter_category=request.args.get('filter_category'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="text-secondary me-3">
-                       <i class="bi bi-x"></i>
+                {% if active_filters.modified_name and active_filters.modified_name != 'Any time' %}
+                   <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_modified='any', filter_category=request.args.get('filter_category'), filter_mime=request.args.get('filter_mime'), filter_period_year=request.args.get('filter_period_year'), sort_by=sort_by, sort_dir=sort_dir) }}" class="btn btn-sm btn-link text-secondary p-0 ms-1 clear-filter-btn" title="Clear Modified Date Filter">
+                       <i class="bi bi-x-circle"></i>
                    </a>
                {% endif %}
                 <ul class="dropdown-menu" aria-labelledby="modifiedFilterDropdown">
@@ -97,13 +97,13 @@
             </div>
 
             {# Period (Year) Filter #}
-            <div class="dropdown d-inline-block me-2 mb-1">
-                <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle" type="button" id="periodYearFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="filter-chip-wrapper d-inline-flex align-items-center me-2 mb-1">
+                <button class="btn btn-sm btn-outline-secondary filter-chip dropdown-toggle {% if active_filters.period_year_name and active_filters.period_year_name != 'Any' %}filter-chip-active{% endif %}" type="button" id="periodYearFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Period Year: <span class="active-filter-label">{{ active_filters.period_year_name | default('Any') }}</span>
                 </button>
-                {% if active_filters.period_year_name %}
-                   <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_period_year='all', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_mime=request.args.get('filter_mime'), sort_by=sort_by, sort_dir=sort_dir) }}" class="text-secondary me-3">
-                       <i class="bi bi-x"></i>
+                {% if active_filters.period_year_name and active_filters.period_year_name != 'Any' %}
+                   <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_period_year='all', filter_category=request.args.get('filter_category'), filter_modified=request.args.get('filter_modified'), filter_mime=request.args.get('filter_mime'), sort_by=sort_by, sort_dir=sort_dir) }}" class="btn btn-sm btn-link text-secondary p-0 ms-1 clear-filter-btn" title="Clear Period Year Filter">
+                       <i class="bi bi-x-circle"></i>
                    </a>
                {% endif %}
                 <ul class="dropdown-menu" aria-labelledby="periodYearFilterDropdown">
@@ -115,12 +115,11 @@
                     {% endfor %}
                 </ul>
             </div>
-                        <div class="d-inline-block">
-                <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, filter_category='all', filter_mime='all', filter_modified='any', filter_period_year='all', sort_by=sort_by, sort_dir=sort_dir) }}" class="btn btn-sm btn-outline-secondary rounded-pill">
-                    <i class="bi me-1"></i> Clear All Filters
+            <div class="d-inline-block mb-1"> {# Ensured mb-1 for alignment when wrapping #}
+                <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, sort_by=sort_by, sort_dir=sort_dir) }}" class="btn btn-sm btn-outline-secondary rounded-pill clear-all-filters-btn">
+                    <i class="bi bi-x-lg me-1"></i> Clear All Filters
                 </a>
             </div>
-
         </div>
 
         {# Sorting Control #}
@@ -156,7 +155,7 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th scope="col name-col">
+                            <th scope="col" class="name-col">
                                 {% set next_dir_name = 'desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc' %}
                                 <a href="{{ url_for('main_bp.list_files', folder_id=current_folder_id, sort_by='name', sort_dir=next_dir_name, filter_category=request.args.get('filter_category'), filter_mime=request.args.get('filter_mime'), filter_modified=request.args.get('filter_modified'), filter_period_year=request.args.get('filter_period_year')) }}">Name</a>
                                 {% if sort_by == 'name' %}<i class="bi bi-sort-{{ 'alpha-up' if sort_dir == 'asc' else 'alpha-down' }}"></i>{% endif %}
@@ -191,17 +190,12 @@
                             <td>--</td>
                             <td>
                                 <a href="#" class="btn btn-sm btn-outline-secondary action-btn rename-folder-btn"
-                                   data-bs-toggle="modal"
-                                   data-bs-target="#renameFolderModal"
-                                   data-folder-id="{{ folder.id_carpeta }}"
-                                   data-folder-name="{{ folder.nombre }}"
+                                   data-bs-toggle="modal" data-bs-target="#renameFolderModal"
+                                   data-folder-id="{{ folder.id_carpeta }}" data-folder-name="{{ folder.nombre }}"
                                    title="Rename Folder"><i class="bi bi-pencil-fill"></i></a>
-                                {# --- CORRECTED MOVE FOLDER BUTTON (List View) --- #}
                                 <a href="#" class="btn btn-sm btn-outline-secondary action-btn move-folder-btn"
-                                   data-bs-toggle="modal"
-                                   data-bs-target="#moveFolderModal"
-                                   data-folder-id="{{ folder.id_carpeta }}"
-                                   data-folder-name="{{ folder.nombre }}"
+                                   data-bs-toggle="modal" data-bs-target="#moveFolderModal"
+                                   data-folder-id="{{ folder.id_carpeta }}" data-folder-name="{{ folder.nombre }}"
                                    data-current-parent-id="{{ folder.id_carpeta_padre if folder.id_carpeta_padre is not none else '' }}"
                                    title="Move Folder"><i class="bi bi-folder-symlink"></i></a>
                                 <form method="POST" action="{{ url_for('folder_actions_bp.delete_folder', folder_id=folder.id_carpeta) }}" class="d-inline delete-folder-form-list">
@@ -232,10 +226,8 @@
                                    data-doc-favorito="{{ 'true' if doc.favorito else 'false' }}"
                                    title="Edit Metadata"><i class="bi bi-pencil-square"></i></a>
                                 <a href="#" class="btn btn-sm btn-outline-secondary action-btn move-file-btn"
-                                   data-bs-toggle="modal"
-                                   data-bs-target="#moveFileModal"
-                                   data-doc-id="{{ doc.id_documento }}"
-                                   data-doc-name="{{ doc.titulo_original }}"
+                                   data-bs-toggle="modal" data-bs-target="#moveFileModal"
+                                   data-doc-id="{{ doc.id_documento }}" data-doc-name="{{ doc.titulo_original }}"
                                    data-current-folder-id="{{ doc.id_carpeta if doc.id_carpeta is not none else '' }}"
                                    title="Move File"><i class="bi bi-folder-symlink"></i></a>
                                 <form method="POST" action="{{ url_for('doc_actions_bp.delete_file', doc_id=doc.id_documento) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this file?');">
@@ -258,7 +250,8 @@
             {# Section for Folders in Grid View #}
             {% if folders %}
             <div class="grid-section-folders mb-4">
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
+                {# --- UPDATED for 6 columns on xl, etc. --- #}
+                <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
                     {% for folder in folders %}
                     <div class="col">
                         <div class="card h-auto drive-item-card drive-folder-card-light shadow-sm">
@@ -274,20 +267,15 @@
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="folderActionsDropdown-{{folder.id_carpeta}}">
                                         <li>
                                             <a class="dropdown-item rename-folder-btn" href="#"
-                                               data-bs-toggle="modal"
-                                               data-bs-target="#renameFolderModal"
-                                               data-folder-id="{{ folder.id_carpeta }}"
-                                               data-folder-name="{{ folder.nombre }}">
+                                               data-bs-toggle="modal" data-bs-target="#renameFolderModal"
+                                               data-folder-id="{{ folder.id_carpeta }}" data-folder-name="{{ folder.nombre }}">
                                                 <i class="bi bi-pencil-fill me-2"></i>Rename
                                             </a>
                                         </li>
-                                        {# --- CORRECTED MOVE FOLDER LINK (Grid View Kebab) --- #}
                                         <li>
                                             <a class="dropdown-item move-folder-btn" href="#"
-                                               data-bs-toggle="modal"
-                                               data-bs-target="#moveFolderModal"
-                                               data-folder-id="{{ folder.id_carpeta }}"
-                                               data-folder-name="{{ folder.nombre }}"
+                                               data-bs-toggle="modal" data-bs-target="#moveFolderModal"
+                                               data-folder-id="{{ folder.id_carpeta }}" data-folder-name="{{ folder.nombre }}"
                                                data-current-parent-id="{{ folder.id_carpeta_padre if folder.id_carpeta_padre is not none else '' }}">
                                                 <i class="bi bi-folder-symlink me-2"></i>Move
                                             </a>
@@ -311,7 +299,8 @@
             {# Section for Documents in Grid View - WITH IMAGE & PDF PREVIEW LOGIC #}
             {% if documents %}
             <div class="grid-section-documents">
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
+                 {# --- UPDATED for 6 columns on xl, etc. --- #}
+                <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
                     {% for doc in documents %} {# documents is now a list of dicts #}
                     <div class="col">
                         <div class="card h-100 drive-item-card drive-file-card shadow-sm">
