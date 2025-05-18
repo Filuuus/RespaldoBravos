@@ -174,13 +174,28 @@ body {
 .drive-main-content { padding: 20px; flex-grow: 1; background-color: #fff; }
 
 /* Prominent Breadcrumb Navigation */
-.drive-breadcrumb-nav .breadcrumb {
-    margin-bottom: 0; font-size: 1.25rem; font-weight: 400; padding: 0.5rem 0;
+.drive-breadcrumb-nav {
+    flex-grow: 1; 
+    margin-bottom: 0; 
 }
-.drive-breadcrumb-nav .breadcrumb-item a { color: #5f6368; text-decoration: none; }
-.drive-breadcrumb-nav .breadcrumb-item a:hover { color: #0d6efd; text-decoration: underline; }
-.drive-breadcrumb-nav .breadcrumb-item.active { color: #202124; font-weight: 500; }
-.drive-breadcrumb-nav { padding-top: 0; flex-grow: 1; }
+.drive-breadcrumb-nav .breadcrumb {
+    margin-bottom: 0; 
+    font-size: 1.35rem; /* Larger font for title-like appearance */
+    font-weight: 400;   
+    padding: 0.25rem 0; 
+}
+.drive-breadcrumb-nav .breadcrumb-item a {
+    color: #5f6368; 
+    text-decoration: none;
+}
+.drive-breadcrumb-nav .breadcrumb-item a:hover {
+    color: #0d6efd; 
+    text-decoration: underline;
+}
+.drive-breadcrumb-nav .breadcrumb-item.active {
+    color: #202124; 
+    font-weight: 500; 
+}
 
 /* View Toggle Button Styling */
 .drive-view-controls .btn-group .btn {
@@ -218,13 +233,15 @@ body {
 /* --- Grid View Item Styling --- */
 .drive-item-card {
     border: 1px solid #dadce0;
-    transition: box-shadow 0.15s ease-in-out; 
+    transition: box-shadow 0.15s ease-in-out;
     height: 100%;
-    border-radius: 12px; 
+    border-radius: 12px; /* Rounder cards */
     background-color: #fff;
+    display: flex; 
+    flex-direction: column; 
 }
 .drive-item-card:hover {
-    box-shadow: 0 1px 3px 0 rgba(60,64,67,.302),0 4px 8px 3px rgba(60,64,67,.149); 
+    box-shadow: 0 1px 3px 0 rgba(60,64,67,.302),0 4px 8px 3px rgba(60,64,67,.149);
 }
 
 /* --- Grid View - Ligth Themed Folder Card Styling --- */
@@ -269,95 +286,93 @@ body {
 
 /* Grid View - File Card Styling */
 .drive-file-card .card-img-top.drive-file-card-preview {
-    height: 200px; /* Increased height for preview area */
-    width: 100%;
-    display: flex; align-items: center; justify-content: center;
-    background-color: #f8f9fa; border-bottom: 1px solid #dadce0;
+    height: 200px; /* You specified this height */
+    width: 100%;   
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa; 
+    border-bottom: 1px solid #dadce0;
     border-top-left-radius: calc(12px - 1px); 
     border-top-right-radius: calc(12px - 1px);
-    overflow: hidden; position: relative;
+    overflow: hidden; 
+    position: relative; 
 }
-.drive-file-card-image-preview {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-}
-.drive-file-card-pdf-preview {
-    max-width: 100%; max-height: 100%; display: block;
+.drive-file-card-image-preview { /* For <img> */
     width: 100%;
-    height: auto; object-fit: cover;
+    height: 100%;
+    object-fit: cover; 
+    display: block;
+}
+.drive-file-card-pdf-preview { /* For <canvas> */
+    width: 100%; 
+    height: auto;  
+    max-height: 100%; 
+    display: block; 
+    object-fit: cover; 
     object-position: top center;
 }
-.pdf-loading-spinner {
+.pdf-loading-spinner { 
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
 }
-.drive-file-card .card-img-top .bi { font-size: 4rem; color: #5f6368; } /* Fallback icon for files */
+.drive-file-card .card-img-top .bi { font-size: 4rem; color: #5f6368; } 
 .drive-file-card .card-img-top .bi-file-image-fill { color: #1a73e8; }
 
 .drive-file-card .card-body { 
     padding: 0.5rem 0.75rem; 
     display: flex;
     flex-direction: column;
-    flex-grow: 1; /* Allows body to fill space in card */
+    flex-grow: 1;
 }
 .drive-file-card .card-title {
-    font-size: 0.8rem; font-weight: 400; color: #3c4043;
-    margin-bottom: 0.25rem; /* Space between title and info line */
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: 0.9rem; 
+    font-weight: 400; 
+    color: #3c4043;
+    margin-bottom: 0.25rem; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
 }
 .drive-file-card .card-title a { color: inherit; text-decoration: none; }
 .drive-file-card .card-title a:hover { color: #0b57d0; }
 
-/* Container for file size, favorite star, and kebab menu */
-.file-info-actions {
+.file-info-actions { /* Container for file size/fav and kebab */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: auto; /* Push this line to the bottom of card-body */
-    padding-top: 0.25rem; /* Add some space above this line */
+    margin-top: auto; 
+    padding-top: 0.25rem; 
 }
-.file-info-actions .file-meta-info { /* Wrapper for size and favorite star */
+.file-info-actions .file-meta-info { 
     font-size: 0.75rem; 
-    color: #5f6368;
-    white-space: nowrap;
+    color: #5f6368;      
+    white-space: nowrap;  
     overflow: hidden;
-    text-overflow: ellipsis;
-    margin-right: 0.25rem; /* Space before kebab */
+    text-overflow: ellipsis; 
+    margin-right: 0.25rem; 
 }
 .file-info-actions .bi-star-fill { 
     font-size: 0.75rem; 
     vertical-align: middle;
 }
-.file-info-actions .drive-file-action-kebab-container {
-    flex-shrink: 0; /* Prevent kebab from shrinking */
-}
+.file-info-actions .drive-file-action-kebab-container { flex-shrink: 0; }
 .drive-file-action-kebab { 
-    color: #5f6368;
-    padding: 0.1rem 0.2rem;
-    line-height: 1;
-    background: none;
-    border: none;
+    color: #5f6368; padding: 0.1rem 0.2rem; line-height: 1;
+    background: none; border: none;
 }
 .drive-file-action-kebab:hover,
 .drive-file-action-kebab:focus,
 .drive-file-action-kebab.show {
-    color: #202124;
-    background-color: rgba(0,0,0,0.05); 
+    color: #202124; background-color: rgba(0,0,0,0.05); 
 }
-.drive-file-action-kebab i.bi {
-    font-size: 1rem; 
-}
-.drive-file-action-kebab-container .dropdown-menu {
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    font-size: 0.875rem;
+.drive-file-action-kebab i.bi { font-size: 1rem; }
+.drive-file-action-kebab-container .dropdown-menu { /* Styles for the dropdown itself */
+    border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 0.875rem;
 }
 .drive-file-action-kebab-container .dropdown-item {
-    padding: 0.5rem 1rem;
-    display: flex; 
-    align-items: center;
+    padding: 0.5rem 1rem; display: flex; align-items: center;
 }
-.drive-file-action-kebab-container .dropdown-item i.bi {
-    margin-right: 0.5rem; 
-}
+.drive-file-action-kebab-container .dropdown-item i.bi { margin-right: 0.5rem; }
 
 
 /* --- Filter Chips and Sorting Controls --- */
@@ -489,4 +504,89 @@ body {
 #profileViewModal .modal-body hr {
     margin-top: 1rem;
     margin-bottom: 1rem;
+}
+
+/* --- Drag and Drop Styling --- */
+.file-draggable {
+    cursor: grab; 
+    user-select: none; 
+}
+
+.file-draggable:hover {
+
+    background-color: #fcfcfc;
+}
+
+.file-draggable.dragging-file { 
+    opacity: 0.6; 
+    cursor: grabbing;
+}
+
+.folder-drop-target.drag-over-folder {
+    background-color: #e0efff !important; /* Light blue highlight */
+    outline: 2px dashed #0d6efd; 
+    outline-offset: -2px; /* Pull outline inwards slightly */
+    box-shadow: 0 0 8px rgba(13, 110, 253, 0.2); /* Adjusted subtle glow */
+    transition: background-color 0.1s linear;
+}
+
+.grid-section-folders .drive-folder-card-light.drag-over-folder {
+    background-color: #e0efff !important; 
+    border-color: #0d6efd !important;
+}
+.grid-section-folders .drive-folder-card-light.drag-over-folder .drive-folder-icon,
+.grid-section-folders .drive-folder-card-light.drag-over-folder .drive-folder-name {
+    color: #0b57d0 !important; 
+}
+
+#list-view-section .folder-drop-target.drag-over-folder td {
+    color: #0b57d0;
+}
+
+/* --- Styling for breadcrumb items as drop targets --- */
+
+.drive-breadcrumb-nav .breadcrumb-item.folder-drop-target {
+    padding: 0.1rem 0; 
+    border-radius: 4px; 
+    transition: background-color 0.1s linear; 
+}
+
+
+.drive-breadcrumb-nav .breadcrumb-item.folder-drop-target.drag-over-folder > a {
+    color: #0b57d0 !important; 
+    text-decoration: underline; 
+}
+
+
+.drive-breadcrumb-nav .breadcrumb-item.active.drag-over-folder {
+    background-color: transparent !important; 
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0; 
+    margin-left: 0;
+    margin-right: 0;
+}
+.drive-breadcrumb-nav .breadcrumb-item.active.drag-over-folder > a,
+.drive-breadcrumb-nav .breadcrumb-item.active.drag-over-folder > span { 
+    color: #202124 !important; 
+    text-decoration: none !important;
+}
+
+
+
+#list-view-section .folder-drop-target.drag-over-folder td {
+    color: #0b57d0; 
+}
+
+.drive-breadcrumb-nav .breadcrumb li.folder-drop-target:only-child.drag-over-folder {
+    background-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+.drive-breadcrumb-nav .breadcrumb li.folder-drop-target:only-child.drag-over-folder > a {
+    color: #5f6368 !important; /* Its default non-active, non-hovered color */
+    text-decoration: none !important;
 }

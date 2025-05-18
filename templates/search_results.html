@@ -5,7 +5,18 @@
 
 {% block content %}
 <div class="container-fluid mt-3">
-    <h1 class="h3 mb-3">Search Results for "<em>{{ search_term }}</em>"</h1>
+    {# Breadcrumb-style title for Search Results #}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <nav aria-label="breadcrumb" class="drive-breadcrumb-nav">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main_bp.list_files', folder_id=None) }}">My Files</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    Search results for: "{{ search_term }}"
+                </li>
+            </ol>
+        </nav>
+        {# Optional: Add view toggle or sort controls for search results if desired #}
+    </div>
 
     {% if not documents and not folders %}
         <div class="alert alert-info" role="alert">
