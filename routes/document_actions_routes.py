@@ -168,27 +168,62 @@ def delete_file(doc_id):
 def move_file(doc_id):
     user_id = session.get('user_id')
     doc_to_move = Documento.query.filter_by(id_documento=doc_id, id_usuario=user_id).first_or_404()
-    user_folders = Carpeta.query.filter_by(id_usuario=user_id).order_by(Carpeta.nombre).all()
-    active_filters_default = {'category_name': 'Any', 'mime_type_name': 'Any', 'modified_name': 'Any time', 'period_year_name': 'Any'} # For GET
+    original_folder_id = doc_to_move.id_carpeta # For logging and redirect if GET is still used
+
     if request.method == 'POST':
-        dest_folder_id_str = request.form.get('destination_folder', '')
-        destination_folder_id = int(dest_folder_id_str) if dest_folder_id_str.isdigit() else None
-        if doc_to_move.id_carpeta == destination_folder_id:
-             flash('File is already in that folder.', 'info')
-             return redirect(url_for('main_bp.list_files', folder_id=destination_folder_id))
-        conflicting_file = Documento.query.filter(Documento.id_usuario == user_id, Documento.id_carpeta == destination_folder_id, Documento.titulo_original == doc_to_move.titulo_original, Documento.id_documento != doc_id).first()
+        # Data from the modal form (sent via FormData by JavaScript)
+        dest_folder_id_str = request.form.get('destination_folder', '') 
+        
+        destination_folder_id = None # Default to root
+        if dest_folder_id_str.isdigit():
+            destination_folder_id = int(dest_folder_id_str)
+        elif dest_folder_id_str != '': 
+            # If it's not empty and not a digit, it's an invalid value from the select
+            return jsonify({'success': False, 'message': 'Invalid destination folder selected.'}), 400
+
+        # --- Validation ---
+        # 1. Cannot "move" to its current folder
+        current_doc_folder_id = doc_to_move.id_carpeta
+        if current_doc_folder_id == destination_folder_id:
+            # While the JS tries to prevent this, backend validation is key
+            return jsonify({'success': False, 'message': 'File is already in the selected destination folder.'}), 400
+
+        # 2. If moving to a specific folder (not root), check if folder exists and belongs to user
+        destination_folder_name_for_msg = "Root Folder"
+        if destination_folder_id is not None:
+            destination_folder_obj = Carpeta.query.filter_by(id_carpeta=destination_folder_id, id_usuario=user_id).first()
+            if not destination_folder_obj:
+                return jsonify({'success': False, 'message': 'Destination folder not found or access denied.'}), 404
+            destination_folder_name_for_msg = destination_folder_obj.nombre
+        
+        # 3. Check for filename conflict in the destination folder
+        #    (Using titulo_original for conflict check, assuming this is the unique name within a folder)
+        conflicting_file = Documento.query.filter(
+            Documento.id_usuario == user_id,
+            Documento.id_carpeta == destination_folder_id, # Target folder
+            Documento.titulo_original == doc_to_move.titulo_original,
+            Documento.id_documento != doc_id # Exclude the file itself
+        ).first()
+
         if conflicting_file:
-            dest_name = "Root Folder"
-            if destination_folder_id:
-                dest_folder_obj = db.session.get(Carpeta, destination_folder_id)
-                if dest_folder_obj: dest_name = dest_folder_obj.nombre
-            flash(f'A file named "{doc_to_move.titulo_original}" already exists in "{dest_name}".', 'danger')
-            return render_template('move_file.html', document=doc_to_move, folders=user_folders, current_page=None, active_filters=active_filters_default, current_folder_id=doc_to_move.id_carpeta)
-        doc_to_move.id_carpeta = destination_folder_id
-        doc_to_move.fecha_modificacion = datetime.now(timezone.utc)
-        db.session.commit()
-        flash(f'File "{doc_to_move.titulo_original}" moved successfully.', 'success')
-        log_activity(user_id=user_id, activity_type='MOVE_DOC', document_id=doc_id, ip_address=request.remote_addr, details=f"Moved to folder ID: {destination_folder_id}")
-        return redirect(url_for('main_bp.list_files', folder_id=destination_folder_id))
-    else: # GET
-        return render_template('move_file.html', document=doc_to_move, folders=user_folders, current_page=None, active_filters_default=active_filters_default, current_folder_id=doc_to_move.id_carpeta)
+            return jsonify({'success': False, 'message': f'A file named "{doc_to_move.titulo_original}" already exists in "{destination_folder_name_for_msg}".'}), 409 # 409 Conflict
+
+        # --- Perform the Move ---
+        try:
+            old_folder_id_for_log = doc_to_move.id_carpeta
+            doc_to_move.id_carpeta = destination_folder_id
+            doc_to_move.fecha_modificacion = datetime.now(timezone.utc) # Ensure datetime & timezone imported
+            db.session.commit() # Ensure db is your SQLAlchemy instance
+            
+            log_activity(
+                user_id=user_id, 
+                activity_type='MOVE_DOC', 
+                document_id=doc_id,
+                ip_address=request.remote_addr, # Ensure request is imported from Flask
+                details=f"Moved file '{doc_to_move.titulo_original}' from folder ID {old_folder_id_for_log} to folder ID: {destination_folder_id if destination_folder_id is not None else 'Root'}"
+            )
+            return jsonify({'success': True, 'message': f'File "{doc_to_move.titulo_original}" moved successfully to "{destination_folder_name_for_msg}".'}), 200
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error moving file (ID: {doc_id}): {str(e)}")
+            return jsonify({'success': False, 'message': f'An error occurred while moving the file: {str(e)}'}), 500
