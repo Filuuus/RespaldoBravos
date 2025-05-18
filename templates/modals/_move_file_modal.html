@@ -1,0 +1,33 @@
+<div class="modal fade" id="moveFileModal" tabindex="-1" aria-labelledby="moveFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moveFileModalLabel">Move File</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="moveFileForm" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="doc_id" id="moveFileModalDocId">
+                    
+                    <p>Move file: <strong id="moveFileModalCurrentName"></strong></p>
+                    
+                    <div class="mb-3">
+                        <label for="moveFileModalDestinationFolder" class="form-label">Select Destination Folder*</label>
+                        {# Removed 'required' attribute from select, JS will handle validation #}
+                        <select name="destination_folder" id="moveFileModalDestinationFolder" class="form-select">
+                            {# Initial option can be set by JS or be a placeholder if JS fails #}
+                            <option value="" disabled selected>Loading folders...</option> 
+                        </select>
+                    </div>
+                    <small class="form-text text-muted">
+                        The file will be moved to the selected folder.
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Move File</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

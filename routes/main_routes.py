@@ -2,10 +2,10 @@ from flask import (
     Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 )
 # Ensure all necessary models are imported
-from models import Documento, Usuario, Categoria, Carpeta, ActividadUsuario
+from models import Documento, Usuario, Categoria, Carpeta, ActividadUsuario 
 from extensions import db
 # Ensure utils are imported (especially login_required and log_activity)
-from utils import login_required, log_activity
+from utils import login_required, log_activity 
 from sqlalchemy import desc, or_, asc, func as sql_func
 from datetime import datetime, timedelta, timezone
 from werkzeug.utils import secure_filename # For download filename
@@ -25,26 +25,33 @@ def home_dashboard():
 
     favorite_documents_raw = Documento.query.filter_by(id_usuario=user_id, favorito=True).order_by(Documento.fecha_modificacion.desc()).limit(10).all()
     recent_documents_raw = Documento.query.filter_by(id_usuario=user_id).order_by(Documento.fecha_modificacion.desc()).limit(10).all()
-
+    
     def process_docs_for_preview(docs_list):
         processed_docs = []
         for doc in docs_list:
-            doc_data = {
-                "id_documento": doc.id_documento, "titulo_original": doc.titulo_original,
-                "mime_type": doc.mime_type, "file_size": doc.file_size, "favorito": doc.favorito,
-                "fecha_modificacion": doc.fecha_modificacion, "categoria": doc.categoria,
-                "id_categoria": doc.id_categoria, "id_carpeta": doc.id_carpeta,
-                "periodo_inicio": doc.periodo_inicio, "periodo_fin": doc.periodo_fin,
-                "descripcion": doc.descripcion, "s3_bucket": doc.s3_bucket,
+            doc_data = { # Convert to dict or use a class that allows adding attributes
+                "id_documento": doc.id_documento, 
+                "titulo_original": doc.titulo_original,
+                "mime_type": doc.mime_type, 
+                "file_size": doc.file_size, 
+                "favorito": doc.favorito,
+                "fecha_modificacion": doc.fecha_modificacion, 
+                "categoria": doc.categoria, # Keep the relationship object for template
+                "id_categoria": doc.id_categoria, 
+                "id_carpeta": doc.id_carpeta,
+                "periodo_inicio": doc.periodo_inicio, 
+                "periodo_fin": doc.periodo_fin,
+                "descripcion": doc.descripcion, 
+                "s3_bucket": doc.s3_bucket, 
                 "s3_object_key": doc.s3_object_key,
-                "preview_url": None
+                "preview_url": None # Initialize
             }
             if doc.mime_type and (doc.mime_type.startswith('image/') or doc.mime_type == 'application/pdf') and local_s3_client:
                 try:
                     preview_s3_url = local_s3_client.generate_presigned_url(
                         'get_object',
                         Params={'Bucket': doc.s3_bucket, 'Key': doc.s3_object_key},
-                        ExpiresIn=300
+                        ExpiresIn=300 
                     )
                     doc_data["preview_url"] = preview_s3_url
                 except Exception as e:
@@ -54,9 +61,9 @@ def home_dashboard():
 
     favorite_documents = process_docs_for_preview(favorite_documents_raw)
     recent_documents = process_docs_for_preview(recent_documents_raw)
-
+    
     active_filters_default = {
-        'category_name': 'Any', 'mime_type_name': 'Any',
+        'category_name': 'Any', 'mime_type_name': 'Any', 
         'modified_name': 'Any time', 'period_year_name': 'Any'
     }
     return render_template(
@@ -77,7 +84,7 @@ def list_files(folder_id):
 
     sort_by = request.args.get('sort_by', 'name')
     sort_dir_param = request.args.get('sort_dir', 'asc')
-
+    
     filter_category_id_str = request.args.get('filter_category', '')
     filter_mime_type_str = request.args.get('filter_mime', '')
     filter_modified_str = request.args.get('filter_modified', '')
@@ -88,7 +95,7 @@ def list_files(folder_id):
         'modified_name': 'Any time', 'period_year_name': 'Any'
     }
     sort_order_func = desc if sort_dir_param == 'desc' else asc
-
+    
     folder_query = Carpeta.query.filter_by(id_usuario=user_id, id_carpeta_padre=folder_id)
     doc_query = Documento.query.filter_by(id_usuario=user_id, id_carpeta=folder_id)\
                          .outerjoin(Categoria, Documento.id_categoria == Categoria.id_categoria)
@@ -98,17 +105,20 @@ def list_files(folder_id):
         doc_query = doc_query.filter(Documento.id_categoria == filter_category_id)
         cat_obj = db.session.get(Categoria, filter_category_id)
         if cat_obj: active_filters['category_name'] = cat_obj.nombre
-
+    
     if filter_mime_type_str and filter_mime_type_str != 'all':
-        doc_query = doc_query.filter(Documento.mime_type.ilike(f'%{filter_mime_type_str}%'))
+        doc_query = doc_query.filter(Documento.mime_type == filter_mime_type_str) # Exact match for MIME type filter
         if 'pdf' in filter_mime_type_str: active_filters['mime_type_name'] = 'PDF'
         elif 'jpeg' in filter_mime_type_str: active_filters['mime_type_name'] = 'JPEG'
         elif 'png' in filter_mime_type_str: active_filters['mime_type_name'] = 'PNG'
         elif 'text/plain' in filter_mime_type_str: active_filters['mime_type_name'] = 'Text'
-        elif 'word' in filter_mime_type_str: active_filters['mime_type_name'] = 'Word Document'
-        elif 'excel' in filter_mime_type_str: active_filters['mime_type_name'] = 'Excel Spreadsheet'
-        elif 'powerpoint' in filter_mime_type_str: active_filters['mime_type_name'] = 'PowerPoint Presentation'
-        else:
+        elif 'msword' in filter_mime_type_str or 'wordprocessingml' in filter_mime_type_str: active_filters['mime_type_name'] = 'Word Document'
+        elif 'excel' in filter_mime_type_str or 'spreadsheetml' in filter_mime_type_str: active_filters['mime_type_name'] = 'Excel Spreadsheet'
+        elif 'powerpoint' in filter_mime_type_str or 'presentationml' in filter_mime_type_str: active_filters['mime_type_name'] = 'PowerPoint'
+        elif filter_mime_type_str.startswith('image/'): active_filters['mime_type_name'] = f'Image ({filter_mime_type_str.split("/")[-1].upper()})'
+        elif filter_mime_type_str.startswith('video/'): active_filters['mime_type_name'] = f'Video ({filter_mime_type_str.split("/")[-1].upper()})'
+        elif filter_mime_type_str.startswith('audio/'): active_filters['mime_type_name'] = f'Audio ({filter_mime_type_str.split("/")[-1].upper()})'
+        else: 
             name_part = filter_mime_type_str.split('/')[-1]
             active_filters['mime_type_name'] = name_part.upper() if name_part else filter_mime_type_str.upper()
 
@@ -118,7 +128,7 @@ def list_files(folder_id):
         elif filter_modified_str == 'yesterday': active_filters['modified_name'] = 'Yesterday'
         elif filter_modified_str == 'last7days': active_filters['modified_name'] = 'Last 7 days'
         elif filter_modified_str == 'last30days': active_filters['modified_name'] = 'Last 30 days'
-
+        
         if filter_modified_str == 'today':
             start_date = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
             doc_query = doc_query.filter(Documento.fecha_modificacion >= start_date)
@@ -155,7 +165,7 @@ def list_files(folder_id):
     elif sort_by == 'size':
         folder_query = folder_query.order_by(asc(Carpeta.nombre))
         doc_query = doc_query.order_by(sort_order_func(Documento.file_size).nullslast())
-    else:
+    else: 
         folder_query = folder_query.order_by(asc(Carpeta.nombre))
         doc_query = doc_query.order_by(asc(Documento.titulo_original))
 
@@ -173,7 +183,7 @@ def list_files(folder_id):
             "id_carpeta": doc.id_carpeta, "id_categoria": doc.id_categoria,
             "categoria": doc.categoria, "periodo_inicio": doc.periodo_inicio,
             "periodo_fin": doc.periodo_fin, "favorito": doc.favorito,
-            "preview_url": None
+            "preview_url": None 
         }
         if doc.mime_type and (doc.mime_type.startswith('image/') or doc.mime_type == 'application/pdf') and local_s3_client:
             try:
@@ -199,32 +209,40 @@ def list_files(folder_id):
                 path_to_root.insert(0, {'id': temp_f.id_carpeta, 'nombre': temp_f.nombre})
                 if temp_f.id_carpeta_padre:
                     parent_f = db.session.get(Carpeta, temp_f.id_carpeta_padre)
-                    if not parent_f or parent_f.id_usuario != user_id: temp_f = None
+                    if not parent_f or parent_f.id_usuario != user_id: temp_f = None 
                     else: temp_f = parent_f
-                else: temp_f = None
+                else: temp_f = None 
             breadcrumbs = path_to_root
         else:
             flash("Folder not found or access denied.", "warning")
-            return redirect(url_for('.list_files', folder_id=None))
+            return redirect(url_for('.list_files', folder_id=None)) # Use . for same blueprint
 
     all_available_categories = Categoria.query.order_by(Categoria.nombre).all()
-    distinct_mime_types_query = db.session.query(Documento.mime_type, sql_func.count(Documento.id_documento))\
-        .filter(Documento.id_usuario == user_id, Documento.mime_type != None)\
+    
+    distinct_mime_types_query = db.session.query(Documento.mime_type, sql_func.count(Documento.id_documento).label('count'))\
+        .filter(Documento.id_usuario == user_id, Documento.mime_type != None, Documento.mime_type != '')\
         .group_by(Documento.mime_type)\
         .order_by(Documento.mime_type).all()
+    
     all_available_mime_types = []
     for mime, count in distinct_mime_types_query:
-        name = mime
-        if 'pdf' in mime: name = f'PDF ({count})'
-        elif 'jpeg' in mime: name = f'JPEG ({count})'
-        elif 'png' in mime: name = f'PNG ({count})'
-        elif 'text/plain' in mime: name = f'Text ({count})'
-        elif 'word' in mime: name = f'Word ({count})'
-        elif 'excel' in mime: name = f'Excel ({count})'
-        elif 'powerpoint' in mime: name = f'PowerPoint ({count})'
-        else: name = f'{mime.split("/")[-1].upper() if "/" in mime else mime.upper()} ({count})'
+        name = mime 
+        if mime == 'application/pdf': name = f'PDF ({count})'
+        elif mime == 'image/jpeg': name = f'JPEG Image ({count})'
+        elif mime == 'image/png': name = f'PNG Image ({count})'
+        elif mime == 'text/plain': name = f'Text File ({count})'
+        elif 'wordprocessingml' in mime or mime == 'application/msword': name = f'Word Document ({count})'
+        elif 'spreadsheetml' in mime or mime == 'application/vnd.ms-excel': name = f'Excel Spreadsheet ({count})'
+        elif 'presentationml' in mime or mime == 'application/vnd.ms-powerpoint': name = f'PowerPoint ({count})'
+        elif mime.startswith('image/'): name = f'Image ({mime.split("/")[-1].upper()}) ({count})'
+        elif mime.startswith('video/'): name = f'Video ({mime.split("/")[-1].upper()}) ({count})'
+        elif mime.startswith('audio/'): name = f'Audio ({mime.split("/")[-1].upper()}) ({count})'
+        elif 'zip' in mime: name = f'ZIP Archive ({count})'
+        else:
+            name_part = mime.split('/')[-1]
+            name = f'{name_part.upper() if name_part else mime.upper()} ({count})'
         all_available_mime_types.append({'value': mime, 'name': name})
-
+        
     distinct_years_query = db.session.query(sql_func.distinct(sql_func.extract('year', Documento.periodo_inicio)))\
         .filter(Documento.id_usuario == user_id, Documento.periodo_inicio != None)\
         .order_by(sql_func.extract('year', Documento.periodo_inicio).desc()).all()
@@ -260,8 +278,8 @@ def activity_log():
     log_pagination = ActividadUsuario.query.filter_by(id_usuario=user_id)\
         .order_by(ActividadUsuario.fecha.desc())\
         .paginate(page=page, per_page=current_app.config.get('ITEMS_PER_PAGE', 20), error_out=False)
-
-    active_filters_default = {'category_name': 'Any', 'mime_type_name': 'Any',
+    
+    active_filters_default = {'category_name': 'Any', 'mime_type_name': 'Any', 
                               'modified_name': 'Any time', 'period_year_name': 'Any'}
     return render_template(
         'activity_log.html',
@@ -271,15 +289,16 @@ def activity_log():
         active_filters=active_filters_default
     )
 
+
 @main_bp.route('/search', methods=['GET'])
 @login_required
 def global_search_route():
     user_id = session.get('user_id')
     search_term = request.args.get('q_global', '').strip()
-    found_documents_raw = []
-    found_folders = []
-
-    local_s3_client = current_app.s3_client
+    found_documents_raw = [] # Initialize
+    found_folders = [] # Initialize
+    
+    local_s3_client = current_app.s3_client 
 
     if search_term:
         search_like = f"%{search_term}%"
@@ -289,25 +308,25 @@ def global_search_route():
                 Documento.titulo_original.ilike(search_like),
                 Documento.descripcion.ilike(search_like)
             )
-        ).order_by(desc(Documento.fecha_modificacion)).all() # Added ordering
-
+        ).order_by(desc(Documento.fecha_modificacion)).all()
+        
         found_folders = Carpeta.query.filter(
             Carpeta.id_usuario == user_id,
             Carpeta.nombre.ilike(search_like)
-        ).order_by(asc(Carpeta.nombre)).all() # Added ordering
-
-        log_activity(user_id=user_id, activity_type='GLOBAL_SEARCH',
+        ).order_by(asc(Carpeta.nombre)).all()
+        
+        log_activity(user_id=user_id, activity_type='GLOBAL_SEARCH', 
                      ip_address=request.remote_addr, details=f"Searched: '{search_term}'")
 
         processed_documents = []
-        for doc in found_documents_query:
+        for doc in found_documents_query: # Iterate over the actual query results
             doc_data = {
                 "id_documento": doc.id_documento, "titulo_original": doc.titulo_original,
                 "mime_type": doc.mime_type, "file_size": doc.file_size, "favorito": doc.favorito,
                 "fecha_modificacion": doc.fecha_modificacion, "categoria": doc.categoria,
                 "id_categoria": doc.id_categoria, "id_carpeta": doc.id_carpeta,
                 "periodo_inicio": doc.periodo_inicio, "periodo_fin": doc.periodo_fin,
-                "descripcion": doc.descripcion, "s3_bucket": doc.s3_bucket,
+                "descripcion": doc.descripcion, "s3_bucket": doc.s3_bucket, 
                 "s3_object_key": doc.s3_object_key,
                 "preview_url": None
             }
@@ -322,14 +341,15 @@ def global_search_route():
                 except Exception as e:
                     current_app.logger.error(f"Error generating preview for search result {doc.s3_object_key}: {e}")
             processed_documents.append(doc_data)
-        found_documents = processed_documents
+        found_documents = processed_documents # Assign processed list
 
-    active_filters_default = {'category_name': 'Any', 'mime_type_name': 'Any',
+
+    active_filters_default = {'category_name': 'Any', 'mime_type_name': 'Any', 
                               'modified_name': 'Any time', 'period_year_name': 'Any'}
     return render_template(
         'search_results.html',
         search_term=search_term,
-        documents=found_documents,
+        documents=found_documents, 
         folders=found_folders,
         current_page='search_results', 
         current_folder_id=None,
