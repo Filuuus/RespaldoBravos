@@ -1,5 +1,7 @@
 # FTTBOX
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Filuuus/RespaldoBravos)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
