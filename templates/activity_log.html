@@ -3,6 +3,19 @@
 {% block title %}Activity Log - My Drive{% endblock %}
 
 {% block content %}
+<style>
+    @media (max-width: 768px) {
+  .col-hide-md {
+      display: none;
+    }
+}
+
+@media (max-width: 1024px) {
+    .col-hide-lg {
+      display: none;
+    }
+  }
+</style>
 <div class="container-fluid mt-3">
     {# Breadcrumb-style title for Activity Log #}
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
@@ -34,8 +47,8 @@
                     <tr>
                         <th scope="col" style="width: 15%;">Date & Time (UTC)</th>
                         <th scope="col" style="width: 15%;">Activity Type</th>
-                        <th scope="col" style="width: 40%;">Details</th>
-                        <th scope="col" style="width: 15%;">Related Item</th>
+                        <th scope="col" style="width: 40%;" class="col-hide-md">Details</th>
+                        <th scope="col" style="width: 15%;" class="col-hide-lg">Related Item</th>
                         <th scope="col" style="width: 15%;">IP Address</th>
                     </tr>
                 </thead>
@@ -57,8 +70,8 @@
                                 {{ log_entry.tipo_actividad.replace('_', ' ') | title if log_entry.tipo_actividad else 'Unknown' }}
                             </span>
                         </td>
-                        <td class="text-break">{{ log_entry.detalle | truncate(150) if log_entry.detalle else '--' }}</td>
-                        <td>
+                        <td class="text-break col-hide-md">{{ log_entry.detalle | truncate(150) if log_entry.detalle else '--' }}</td>
+                        <td class="col-hide-lg">
                             {% if log_entry.documento %}
                                 <i class="bi bi-file-earmark-text me-1"></i>
                                 <small>{{ log_entry.documento.titulo_original | truncate(30) }}</small>

@@ -3,6 +3,19 @@
 {% block title %}Recent Files - My Drive{% endblock %}
 
 {% block content %}
+<style>
+    @media (max-width: 768px) {
+  .col-hide-md {
+      display: none;
+    }
+}
+
+@media (max-width: 1024px) {
+    .col-hide-lg {
+      display: none;
+    }
+  }
+</style>
 <div class="container-fluid mt-3">
     {# Breadcrumb-style title and View Controls #}
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
@@ -135,9 +148,9 @@
                     <thead>
                         <tr>
                             <th scope="col" class="name-col">Name</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Date Modified</th>
-                            <th scope="col">Size</th>
+                            <th scope="col" class="col-hide-lg">Type</th>
+                            <th scope="col" class="col-hide-md">Date Modified</th>
+                            <th scope="col" class="col-hide-lg">Size</th>
                             <th scope="col">Actions</th>
                         </tr>
                     </thead>
@@ -149,9 +162,9 @@
                                 {{ doc.titulo_original }}
                                 {% if doc.favorito %}<i class="bi bi-star-fill text-warning ms-1" title="Favorite"></i>{% endif %}
                             </td>
-                            <td>{{ doc.categoria.nombre if doc.categoria else (doc.mime_type if doc.mime_type else 'File') }}</td>
-                            <td>{{ doc.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if doc.fecha_modificacion else 'N/A' }}</td>
-                            <td>{{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}</td>
+                            <td class="col-hide-lg">{{ doc.categoria.nombre if doc.categoria else (doc.mime_type if doc.mime_type else 'File') }}</td>
+                            <td class="col-hide-md">{{ doc.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if doc.fecha_modificacion else 'N/A' }}</td>
+                            <td class="col-hide-lg">{{ doc.file_size | format_file_size if doc.file_size is not none else 'N/A' }}</td>
                             <td>
                                 <a href="{{ url_for('doc_actions_bp.download_file', doc_id=doc.id_documento) }}" class="btn btn-sm btn-outline-primary action-btn" title="Download"><i class="bi bi-download"></i></a>
                                 <a href="#" class="btn btn-sm btn-outline-warning action-btn edit-file-btn"
