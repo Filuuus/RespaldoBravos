@@ -1,101 +1,73 @@
 {% extends "base_drive_layout.html" %}
 
-{% block title %}Trash {% endblock %}
+{% block title %}Trash{% endblock %}
 
 {% block content %}
-      <!-- header y aside definido en base_drive -->
-
-    <div class="container_papelera">
-      <div class="panel">
-        <h2>&larr; Papelera</h2>
-        <div class="header_">
-          <span></span>
-          <span> Nombre del archivo</span>
-          <div class="details">
-            <span>Fecha de eliminación</span>
-            <span>Ubicación</span>
-          </div>
-        </div>
-
-        <div class="file-item">
-          <!-- añadir los archivos que se eliminaron (es solo un ejemplo de la vista, no puesta ninguno en específico)-->
-          <div class="file-info">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              x="0px"
-              y="0px"
-              width="100"
-              height="100"
-              viewBox="0,0,256,256"
-            >
-              <g
-                fill="#d5b25c"
-                fill-rule="nonzero"
-                stroke="none"
-                stroke-width="1"
-                stroke-linecap="butt"
-                stroke-linejoin="miter"
-                stroke-miterlimit="10"
-                stroke-dasharray=""
-                stroke-dashoffset="0"
-                font-family="none"
-                font-weight="none"
-                font-size="none"
-                text-anchor="none"
-                style="mix-blend-mode: normal"
-              >
-                <g transform="scale(10.66667,10.66667)">
-                  <path
-                    d="M6,2c-1.09425,0 -2,0.90575 -2,2v16c0,1.09426 0.90575,2 2,2h12c1.09426,0 2,-0.90574 2,-2v-12l-6,-6zM6,4h7v5h5v11h-12zM8,12v2h8v-2zM8,16v2h8v-2z"
-                  ></path>
-                </g>
-              </g>
-            </svg>
-            <span>Constancia1.pdf</span>
-          </div>
-          <div class="details">
-            <span>02/26/2025</span>
-            <span>Formación académica</span>
-          </div>
-        </div>
-
-        <button class="vaciar-btn btn-primary">Vaciar papelera</button>
-      </div>
-
-      <div class="aside2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          x="0px"
-          y="0px"
-          width="150"
-          height="150"
-          viewBox="0,0,256,256"
-        >
-          <g
-            fill-rule="nonzero"
-            stroke="none"
-            stroke-width="1"
-            stroke-linecap="butt"
-            stroke-linejoin="miter"
-            stroke-miterlimit="10"
-            stroke-dasharray=""
-            stroke-dashoffset="0"
-            font-family="none"
-            font-weight="none"
-            font-size="none"
-            text-anchor="none"
-            style="mix-blend-mode: normal"
-          >
-            <g transform="scale(10.66667,10.66667)">
-              <path
-                d="M10,2l-1,1h-4c-0.6,0 -1,0.4 -1,1c0,0.6 0.4,1 1,1h2h10h2c0.6,0 1,-0.4 1,-1c0,-0.6 -0.4,-1 -1,-1h-4l-1,-1zM5,7v13c0,1.1 0.9,2 2,2h10c1.1,0 2,-0.9 2,-2v-13zM9,9c0.6,0 1,0.4 1,1v9c0,0.6 -0.4,1 -1,1c-0.6,0 -1,-0.4 -1,-1v-9c0,-0.6 0.4,-1 1,-1zM15,9c0.6,0 1,0.4 1,1v9c0,0.6 -0.4,1 -1,1c-0.6,0 -1,-0.4 -1,-1v-9c0,-0.6 0.4,-1 1,-1z"
-              ></path>
-            </g>
-          </g>
-        </svg>
-        <p>
-          Todos los archivos serán eliminados automáticamente después de 8 días
-        </p>
-        <button class="btn2 btn-primary">Recuperar</button>
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-trash-fill me-2"></i>Trash</h2>
+    <button class="btn btn-danger">
+      <i class="bi bi-trash3"></i> Empty Trash
+    </button>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">File Name</th>
+              <th scope="col">Deleted At</th>
+              <th scope="col">Location</th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Example row, replace with a loop when you have real data -->
+            <tr>
+              <td>
+                <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                Constancia1.pdf
+              </td>
+              <td>02/26/2025</td>
+              <td>Academic Formation</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary me-2">
+                  <i class="bi bi-arrow-counterclockwise"></i> Restore
+                </button>
+                <button class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-x-lg"></i> Delete
+                </button>
+              </td>
+            </tr>
+            <!-- End example row -->
+            <!--
+            {% for file in deleted_files %}
+            <tr>
+              <td>
+                <i class="bi bi-file-earmark-{{ file.icon }} text-secondary me-2"></i>
+                {{ file.name }}
+              </td>
+              <td>{{ file.deleted_at }}</td>
+              <td>{{ file.location }}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary me-2">
+                  <i class="bi bi-arrow-counterclockwise"></i> Restore
+                </button>
+                <button class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-x-lg"></i> Delete
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+            -->
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
+  <div class="alert alert-info mt-4" role="alert">
+    All files will be permanently deleted after 8 days.
+  </div>
+</div>
+{% endblock %}

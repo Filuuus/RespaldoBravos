@@ -1,3 +1,29 @@
+/* Tema claro (por defecto) */
+:root {
+    --bg: #fff;
+    --text: #222;
+    --primary-gold: #c4a14b;
+    --primary-gold-light: #d5b25c;
+    --primary-gold-dark: #a8893a;
+    --info: #4b7fc1;
+}
+
+/* Tema oscuro */
+.dark-theme {
+    --bg: #1c1c1c;
+    --text: #f5f5f5;
+    --primary-gold: #c4a14b;
+    --primary-gold-light: #d5b25c;
+    --primary-gold-dark: #a8893a;
+    --info: #74AEE8;
+}
+
+/* Usa las variables en tu CSS */
+body {
+    background: var(--bg);
+    color: var(--text);
+}
+
 #uploadModalLabel { 
     color: #343a40; 
     /* font-size: 1.5rem; */ 

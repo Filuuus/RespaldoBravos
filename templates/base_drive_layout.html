@@ -62,6 +62,9 @@
                         <a href="{{ url_for('auth_bp.logout') }}" class="dropdown-item">
                             <i class="bi bi-box-arrow-right me-2"></i>Logout
                         </a>
+                        <li>
+                        
+                        </li>
                     </div>
                 {% else %}
                     <a href="{{ url_for('auth_bp.login') }}" class="btn btn-sm btn-primary">Login</a>
@@ -126,7 +129,16 @@
                             <i class="bi bi-activity me-2"></i>Activity Log
                         </a>
                     </li>
-                    <li><a href="#"><i class="bi bi-trash-fill me-2"></i>Trash</a></li> {# Placeholder #}
+                    <li>
+                        <a href="{{ url_for('main_bp.trash_page') }}" class="{{ 'active' if current_page == 'trash' else '' }}">
+                            <i class="bi bi-trash-fill me-2"></i>Trash
+                        </a>
+                    </li> {# Placeholder #}
+                    <li>
+                        <a href="{{ url_for('cv.generate_cv') }}" class="btn btn-success w-100 my-2 d-flex align-items-center justify-content-center" style="color:white;">
+                            <i class="bi bi-file-earmark-person-fill me-2"></i>Generate resume
+                        </a>
+                    </li>
                 </ul>
             </nav>
             {# Folder tree can be loaded here later #}
@@ -168,6 +180,26 @@
     <script src="{{ url_for('static', filename='js/move_file.js') }}"></script>
     <script src="{{ url_for('static', filename='js/move_folder.js') }}"></script>
     <script src="{{ url_for('static', filename='js/dragndrop.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const icon = document.getElementById('profileMenuIcon');
+    const menu = document.getElementById('profileDropdownMenu');
+    if (icon && menu) {
+        icon.addEventListener('click', function (e) {
+            e.stopPropagation();
+            menu.classList.toggle('show');
+        });
+        // Cierra el menú si haces clic fuera
+        document.addEventListener('click', function (e) {
+            if (!menu.contains(e.target) && !icon.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+    }
+});
+</script>
 
     {% block scripts %}{% endblock %}
 </body>

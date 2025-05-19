@@ -480,3 +480,7 @@ def favorite_files_page():
         current_folder_id=None, 
         active_filters=active_filters_default 
     )
+
+@main_bp.route('/trash')
+def trash_page():
+    return render_template('trash.html', current_page='trash', current_folder_id=None)

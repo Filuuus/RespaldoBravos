@@ -13,6 +13,7 @@ from routes.auth_routes import auth_bp
 from routes.document_actions_routes import doc_actions_bp
 from routes.folder_actions_routes import folder_actions_bp
 from routes.main_routes import main_bp
+from routes.cv_routes import cv_bp
 
 load_dotenv() 
 
@@ -41,6 +42,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(doc_actions_bp)
 app.register_blueprint(folder_actions_bp)
 app.register_blueprint(main_bp)
+app.register_blueprint(cv_bp)
 
 # --- 2. Initialize Extensions that NEED config (like DB) ---
 db.init_app(app) 
