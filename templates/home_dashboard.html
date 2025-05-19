@@ -28,10 +28,7 @@
 
     {# Recent Folders Section #}
     <section class="mb-5">
-        {# --- MODIFIED: Made header a link --- #}
-        <a href="{{ url_for('main_bp.list_files', sort_by='date', sort_dir='desc') }}" class="text-decoration-none text-dark section-header-link">
-            <h4 class="mb-3"><i class="bi bi-folder2-open me-2 text-primary"></i>Recent Folders</h4>
-        </a>
+        <h4 class="mb-3"><i class="bi bi-folder2-open me-2 text-primary"></i>Recent Folders</h4>
         {% if recent_folders %}
         <div class="grid-section-folders mb-4">
             <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
@@ -87,10 +84,7 @@
 
     {# Favorites Section #}
     <section class="mb-5">
-        {# --- MODIFIED: Made header a link --- #}
-        <a href="{{ url_for('main_bp.favorite_files_page') }}" class="text-decoration-none text-dark section-header-link">
-            <h4 class="mb-3"><i class="bi bi-star-fill me-2 text-warning"></i>Favorite Files</h4>
-        </a>
+        <h4 class="mb-3"><i class="bi bi-star-fill me-2 text-warning"></i>Favorite Files</h4>
         {% if favorite_documents %}
             <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
                 {% for doc in favorite_documents %} {# doc is now a dictionary #}
@@ -182,9 +176,7 @@
 
     {# Recents Section #}
     <section>
-        <a href="{{ url_for('main_bp.recent_files_page') }}" class="text-decoration-none text-dark section-header-link">
-            <h4 class="mb-3"><i class="bi bi-clock-history me-2 text-info"></i>Recently Modified Files</h4>
-        </a>
+        <h4 class="mb-3"><i class="bi bi-clock-history me-2 text-info"></i>Recently Modified Files</h4>
         {% if recent_documents %}
             <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
                 {% for doc in recent_documents %} {# doc is now a dictionary #}
@@ -319,14 +311,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-<style>
-.section-header-link h4 { 
-    color: #202124; 
-    transition: color 0.15s ease-in-out;
+<!-- <style>
+.drive-item-card .card-title a { color: #212529; }
+.drive-item-card .card-title a:hover { color: #0d6efd; text-decoration: underline; }
+.drive-item-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+.drive-item-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.drive-file-card .card-img-top.drive-file-card-preview {
+    height: 150px; /* You can adjust this for dashboard cards if different from drive_home */
 }
-.section-header-link:hover h4 {
-    color: #0d6efd; 
-    text-decoration: underline;
-}
-</style>
+</style> -->
 {% endblock %}
