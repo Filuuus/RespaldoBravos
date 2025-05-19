@@ -172,10 +172,13 @@ input::placeholder {
     .image-side {
         display: none;
     }
-    
+    .container{
+        align-items: center;
+    }
     .form-side {
         width: 100%;
-        box-shadow: none; 
+        height: 80%;
+        box-shadow:-2px 0px 15px rgba(0,0,0,0.1);
     }
     
     .button-group {
