@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Currículum de {{ user.nombre }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1 { border-bottom: 1px solid #333; }
+        .doc { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>{{ user.nombre }}</h1>
+    <p>Email: {{ user.email }}</p>
+    <!-- Agrega más campos según tu modelo -->
+    {% if user.descripcion_personal %}
+        <h2>Descripción Personal</h2>
+        <p>{{ user.descripcion_personal }}</p>
+    {% endif %}
+    <h2>Documentos Seleccionados</h2>
+    {% for doc in documentos %}
+        <div class="doc">
+            <strong>{{ doc.titulo_original }}</strong> ({{ doc.tipo }})<br>
+            {% if doc.descripcion %}
+                <em>{{ doc.descripcion }}</em>
+            {% endif %}
+        </div>
+    {% endfor %}
+</body>
+</html>

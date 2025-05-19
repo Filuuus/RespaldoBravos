@@ -1,0 +1,57 @@
+{% extends "base_drive_layout.html" %}
+{% block content %}
+<div class="container my-4">
+  <h2 class="mb-4">Generate resume</h2>
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Full Name:</label>
+      <input type="text" class="form-control" name="nombre" value="{{ user.nombre_completo }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Personal Description:</label>
+      <textarea class="form-control" name="descripcion_personal" rows="4">{{ user.descripcion_personal or '' }}</textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Phone Number:</label>
+      <input type="text" class="form-control" name="numero" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Email:</label>
+      <input type="email" class="form-control" name="email" required>
+    </div>
+    <div class="mb-3" id="extra-contactos">
+      <label class="form-label">Additional Contact:</label>
+      <input type="text" class="form-control" name="contactos_extra" value="{{ user.contactos_extra[0] if user.contactos_extra else '' }}">
+    </div>
+    <h4 class="mt-4 mb-3">Select the documents to include:</h4>
+    {% if documentos|length == 0 %}
+      <div class="alert alert-warning">No tienes documentos completos para incluir en el currículum.</div>
+    {% else %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+      {% for doc in documentos %}
+      <div class="col">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body">
+            <div class="form-check form-switch float-end">
+              <input class="form-check-input" type="checkbox" name="docs" value="{{ doc.id_documento }}" id="docSwitch{{ doc.id_documento }}" checked>
+              <label class="form-check-label" for="docSwitch{{ doc.id_documento }}"></label>
+            </div>
+            <h5 class="card-title mb-1">{{ doc.titulo_original }}</h5>
+            <p class="card-text mb-1"><small class="text-muted">{{ doc.tipo }}</small></p>
+            {% if doc.descripcion %}
+              <p class="card-text">{{ doc.descripcion }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="mt-4">
+      <button type="submit" class="btn btn-success btn-lg w-100">
+        <i class="bi bi-file-earmark-arrow-down"></i> Generate PDF
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

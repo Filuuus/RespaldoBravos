@@ -365,3 +365,122 @@ def global_search_route():
         current_folder_id=None,
         active_filters=active_filters_default
     )
+
+# --- NEW: Recent Files Page Route ---
+@main_bp.route('/recents')
+@login_required
+def recent_files_page():
+    user_id = session.get('user_id')
+    local_s3_client = current_app.s3_client
+    page = request.args.get('page', 1, type=int)
+
+    try:
+        # Fetch all documents, ordered by most recently modified, with pagination
+        documents_pagination = Documento.query.filter_by(id_usuario=user_id)\
+            .order_by(desc(Documento.fecha_modificacion))\
+            .paginate(page=page, per_page=current_app.config.get('ITEMS_PER_PAGE_GRID', 18), error_out=False)
+            # ITEMS_PER_PAGE_GRID can be a new config, e.g., 3 rows of 6 items = 18
+
+        processed_page_documents = []
+        for doc in documents_pagination.items:
+            doc_data = {
+                "id_documento": doc.id_documento, "titulo_original": doc.titulo_original,
+                "mime_type": doc.mime_type, "file_size": doc.file_size, "favorito": doc.favorito,
+                "fecha_modificacion": doc.fecha_modificacion, "categoria": doc.categoria,
+                "id_categoria": doc.id_categoria, "id_carpeta": doc.id_carpeta,
+                "periodo_inicio": doc.periodo_inicio, "periodo_fin": doc.periodo_fin,
+                "descripcion": doc.descripcion, "s3_bucket": doc.s3_bucket, 
+                "s3_object_key": doc.s3_object_key,
+                "preview_url": None
+            }
+            if doc.mime_type and (doc.mime_type.startswith('image/') or doc.mime_type == 'application/pdf') and local_s3_client:
+                try:
+                    preview_s3_url = local_s3_client.generate_presigned_url(
+                        'get_object',
+                        Params={'Bucket': doc.s3_bucket, 'Key': doc.s3_object_key},
+                        ExpiresIn=300
+                    )
+                    doc_data["preview_url"] = preview_s3_url
+                except Exception as e:
+                    current_app.logger.error(f"Error generating presigned URL for recent file {doc.s3_object_key}: {e}")
+            processed_page_documents.append(doc_data)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching recent files: {e}")
+        flash("Could not load recent files.", "error")
+        documents_pagination = None
+        processed_page_documents = []
+        
+    active_filters_default = {
+        'category_name': 'Any', 'mime_type_name': 'Any', 
+        'modified_name': 'Any time', 'period_year_name': 'Any'
+    }
+
+    return render_template(
+        'recent_files.html',
+        documents_pagination=documents_pagination, # For pagination links
+        page_documents=processed_page_documents,    # For displaying items
+        current_page='recents', # For sidebar active state
+        current_folder_id=None, # No specific folder context
+        active_filters=active_filters_default # For base layout consistency
+    )
+# --- End Recent Files Page Route ---
+
+# --- NEW: Favorites Page Route ---
+@main_bp.route('/favorites')
+@login_required
+def favorite_files_page():
+    user_id = session.get('user_id')
+    local_s3_client = current_app.s3_client
+    page = request.args.get('page', 1, type=int)
+    processed_page_documents = [] 
+    documents_pagination_raw = None 
+
+    try:
+        documents_pagination_raw = Documento.query.filter_by(id_usuario=user_id, favorito=True)\
+            .order_by(desc(Documento.fecha_modificacion))\
+            .paginate(page=page, per_page=current_app.config.get('ITEMS_PER_PAGE_GRID', 18), error_out=False)
+        
+        if documents_pagination_raw and documents_pagination_raw.items: 
+            for doc in documents_pagination_raw.items:
+                doc_data = {
+                    "id_documento": doc.id_documento, "titulo_original": doc.titulo_original,
+                    "mime_type": doc.mime_type, "file_size": doc.file_size, "favorito": doc.favorito,
+                    "fecha_modificacion": doc.fecha_modificacion, "fecha_carga": doc.fecha_carga,
+                    "categoria": doc.categoria, "id_categoria": doc.id_categoria, 
+                    "id_carpeta": doc.id_carpeta, "periodo_inicio": doc.periodo_inicio, 
+                    "periodo_fin": doc.periodo_fin, "descripcion": doc.descripcion, 
+                    "s3_bucket": doc.s3_bucket, "s3_object_key": doc.s3_object_key,
+                    "preview_url": None
+                }
+                if doc.mime_type and (doc.mime_type.startswith('image/') or doc.mime_type == 'application/pdf') and local_s3_client:
+                    try:
+                        preview_s3_url = local_s3_client.generate_presigned_url(
+                            'get_object',
+                            Params={'Bucket': doc.s3_bucket, 'Key': doc.s3_object_key},
+                            ExpiresIn=300
+                        )
+                        doc_data["preview_url"] = preview_s3_url
+                    except Exception as e:
+                        current_app.logger.error(f"Error generating presigned URL for favorite file {doc.s3_object_key}: {e}")
+                processed_page_documents.append(doc_data)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching favorite files: {e}")
+        flash("Could not load favorite files.", "error")
+        
+    active_filters_default = {
+        'category_name': 'Any', 'mime_type_name': 'Any', 
+        'modified_name': 'Any time', 'period_year_name': 'Any'
+    }
+    return render_template(
+        'favorite_files.html', 
+        documents_pagination=documents_pagination_raw, 
+        page_documents=processed_page_documents,    
+        current_page='favorites', 
+        current_folder_id=None, 
+        active_filters=active_filters_default 
+    )
+
+@main_bp.route('/trash')
+def trash_page():
+    return render_template('trash.html', current_page='trash', current_folder_id=None)
