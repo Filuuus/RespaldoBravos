@@ -116,7 +116,11 @@
                         </a>
                     </li> 
 
-                    <li><a href="#"><i class="bi bi-star-fill me-2"></i>Favorites</a></li> {# Placeholder - distinct from home page favorites #}
+                    <li>
+                        <a href="{{ url_for('main_bp.favorite_files_page') }}" class="{{ 'active' if current_page == 'favorites' else '' }}">
+                            <i class="bi bi-star-fill me-2"></i>Favorites
+                        </a>
+                    </li>
                     <li>
                         <a href="{{ url_for('main_bp.activity_log') }}" class="{{ 'active' if current_page == 'activity_log' else '' }}">
                             <i class="bi bi-activity me-2"></i>Activity Log
